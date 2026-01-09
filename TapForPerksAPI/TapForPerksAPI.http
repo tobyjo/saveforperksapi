@@ -1,0 +1,6 @@
+@TapForPerksAPI_HostAddress = http://localhost:5143
+
+GET {{TapForPerksAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

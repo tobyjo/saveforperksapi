@@ -1,11 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using TapForPerksAPI.DbContexts;
+using TapForPerksAPI.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddDbContext<TapForPerksContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<ITapForPerksRepository, TapForPerksRepository>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

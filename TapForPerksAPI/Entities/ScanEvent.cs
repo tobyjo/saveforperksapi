@@ -13,6 +13,8 @@ public class ScanEvent
 
     public Guid? LoyaltyOwnerUserId { get; set; }
 
+    public string QrCodeValue { get; set; } = null!;
+
     public DateTime ScannedAt { get; set; }
 
     public int PointsChange { get; set; }

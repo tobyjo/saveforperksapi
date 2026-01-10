@@ -358,6 +358,11 @@ namespace TapForPerksAPI.Migrations
                         .HasDefaultValue(1)
                         .HasColumnName("points_change");
 
+                    b.Property<string>("QrCodeValue")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("qr_code_value");
+
                     b.Property<DateTime>("ScannedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")

@@ -12,7 +12,7 @@ using TapForPerksAPI.DbContexts;
 namespace TapForPerksAPI.Migrations
 {
     [DbContext(typeof(TapForPerksContext))]
-    [Migration("20260110105825_InitalCreate")]
+    [Migration("20260110155346_InitalCreate")]
     partial class InitalCreate
     {
         /// <inheritdoc />
@@ -360,6 +360,11 @@ namespace TapForPerksAPI.Migrations
                         .HasColumnType("int")
                         .HasDefaultValue(1)
                         .HasColumnName("points_change");
+
+                    b.Property<string>("QrCodeValue")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("qr_code_value");
 
                     b.Property<DateTime>("ScannedAt")
                         .ValueGeneratedOnAdd()

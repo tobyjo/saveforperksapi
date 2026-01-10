@@ -122,6 +122,7 @@ namespace TapForPerksAPI.Migrations
                     user_id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     loyalty_programme_id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     loyalty_owner_user_id = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    qr_code_value = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     scanned_at = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "(sysdatetime())"),
                     points_change = table.Column<int>(type: "int", nullable: false, defaultValue: 1)
                 },

@@ -36,6 +36,9 @@ public class ScanEventConfiguration : IEntityTypeConfiguration<ScanEvent>
         builder.Property(e => e.UserId)
             .HasColumnName("user_id");
 
+        builder.Property(e => e.QrCodeValue)
+         .HasColumnName("qr_code_value");
+
         builder.HasOne(d => d.LoyaltyOwnerUser)
             .WithMany(p => p.ScanEvents)
             .HasForeignKey(d => d.LoyaltyOwnerUserId)

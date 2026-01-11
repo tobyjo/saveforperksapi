@@ -28,6 +28,14 @@ public class LoyaltyProgrammeConfiguration : IEntityTypeConfiguration<LoyaltyPro
         builder.Property(e => e.LoyaltyOwnerId)
             .HasColumnName("loyalty_owner_id");
 
+
+        builder.Property(e => e.CostPoints)
+            .HasColumnName("cost_points");
+
+        builder.Property(e => e.RewardType)
+            .HasMaxLength(100)
+            .HasColumnName("reward_type");
+
         builder.Property(e => e.Metadata)
             .HasColumnName("metadata");
 
@@ -46,7 +54,9 @@ public class LoyaltyProgrammeConfiguration : IEntityTypeConfiguration<LoyaltyPro
             {
                 Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
                 LoyaltyOwnerId = Guid.Parse("11111111-1111-1111-1111-111111111111"),
-                Name = "Coffee Loyalty Programme",
+                Name = "Free Coffee at 5 points",
+                CostPoints = 5,
+                RewardType = "points",
                 IsActive = true,
                 CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             },
@@ -54,7 +64,9 @@ public class LoyaltyProgrammeConfiguration : IEntityTypeConfiguration<LoyaltyPro
             {
                 Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
                 LoyaltyOwnerId = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                Name = "Wedding Drink Allowance",
+                Name = "Wedding Drink Allowance of 2 drinks",
+                CostPoints = 2,
+                RewardType = "allowance_limit",
                 IsActive = true,
                 CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }

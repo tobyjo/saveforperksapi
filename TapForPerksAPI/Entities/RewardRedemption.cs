@@ -7,7 +7,6 @@ public class RewardRedemption
 {
     public Guid Id { get; set; }
 
-    public Guid RewardId { get; set; }
 
     public Guid UserId { get; set; }
 
@@ -20,8 +19,6 @@ public class RewardRedemption
     public virtual LoyaltyOwnerUser? LoyaltyOwnerUser { get; set; }
 
     public virtual LoyaltyProgramme LoyaltyProgramme { get; set; } = null!;
-
-    public virtual Reward Reward { get; set; } = null!;
 
     public virtual User User { get; set; } = null!;
 }

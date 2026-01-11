@@ -29,9 +29,6 @@ public class RewardRedemptionConfiguration : IEntityTypeConfiguration<RewardRede
             .HasDefaultValueSql("(sysdatetime())")
             .HasColumnName("redeemed_at");
 
-        builder.Property(e => e.RewardId)
-            .HasColumnName("reward_id");
-
         builder.Property(e => e.UserId)
             .HasColumnName("user_id");
 
@@ -45,11 +42,6 @@ public class RewardRedemptionConfiguration : IEntityTypeConfiguration<RewardRede
             .HasForeignKey(d => d.LoyaltyProgrammeId)
             .OnDelete(DeleteBehavior.ClientSetNull)
             .HasConstraintName("fk_reward_redemption_programme");
-
-        builder.HasOne(d => d.Reward)
-            .WithMany(p => p.RewardRedemptions)
-            .HasForeignKey(d => d.RewardId)
-            .HasConstraintName("fk_reward_redemption_reward");
 
         builder.HasOne(d => d.User)
             .WithMany(p => p.RewardRedemptions)

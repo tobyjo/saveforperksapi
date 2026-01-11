@@ -11,6 +11,9 @@ public class LoyaltyProgramme
 
     public string Name { get; set; } = null!;
 
+    public string RewardType { get; set; } = string.Empty;
+    public int? CostPoints { get; set; }
+
     public bool IsActive { get; set; }
 
     public string? Metadata { get; set; }
@@ -20,8 +23,6 @@ public class LoyaltyProgramme
     public virtual LoyaltyOwner LoyaltyOwner { get; set; } = null!;
 
     public virtual ICollection<RewardRedemption> RewardRedemptions { get; set; } = new List<RewardRedemption>();
-
-    public virtual ICollection<Reward> Rewards { get; set; } = new List<Reward>();
 
     public virtual ICollection<ScanEvent> ScanEvents { get; set; } = new List<ScanEvent>();
 

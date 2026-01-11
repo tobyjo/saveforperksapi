@@ -15,7 +15,6 @@ public class TapForPerksContext : DbContext
     public DbSet<LoyaltyOwner> LoyaltyOwners { get; set; }
     public DbSet<LoyaltyOwnerUser> LoyaltyOwnerUsers { get; set; }
     public DbSet<LoyaltyProgramme> LoyaltyProgrammes { get; set; }
-    public DbSet<Reward> Rewards { get; set; }
     public DbSet<RewardRedemption> RewardRedemptions { get; set; }
     public DbSet<ScanEvent> ScanEvents { get; set; }
     public DbSet<User> Users { get; set; }

@@ -12,7 +12,6 @@ public class LoyaltyProgrammeProfile : Profile
             .ForMember(dest => dest.Metadata, opt => opt.Ignore())
             .ForMember(dest => dest.LoyaltyOwner, opt => opt.Ignore())
             .ForMember(dest => dest.RewardRedemptions, opt => opt.Ignore())
-            .ForMember(dest => dest.Rewards, opt => opt.Ignore())
             .ForMember(dest => dest.ScanEvents, opt => opt.Ignore())
             .ForMember(dest => dest.UserBalances, opt => opt.Ignore());
     }

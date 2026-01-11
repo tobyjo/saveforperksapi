@@ -45,6 +45,8 @@ namespace TapForPerksAPI.Controllers.LoyaltyOwner
 
             scanEventEntity.UserId = userEntity.Id;
 
+            //
+
             await tapForPerksRepository.AddScanEvent(scanEventEntity);
             await tapForPerksRepository.SaveChangesAsync();
 

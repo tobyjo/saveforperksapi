@@ -32,10 +32,10 @@ public class RewardService : IRewardService
         if (processResult.IsFailure)
             return Result<ScanEventResponseDto>.Failure(processResult.Error!);
 
-        var (updatedBalance, scanEvent) = processResult.Value;
+        var (updatedBalance, scanEvent, redemptionIds) = processResult.Value;
 
         // 3. Build response
-        var response = BuildResponse(user, reward, updatedBalance, scanEvent);
+        var response = BuildResponse(user, reward, updatedBalance, scanEvent, request.NumRewardsToClaim, redemptionIds);
 
         return Result<ScanEventResponseDto>.Success(response);
     }
@@ -78,7 +78,7 @@ public class RewardService : IRewardService
         return Result<(User, Reward, UserBalance?)>.Success((user, reward, balance));
     }
 
-    private async Task<Result<(UserBalance balance, ScanEvent scanEvent)>> 
+    private async Task<Result<(UserBalance balance, ScanEvent scanEvent, List<Guid>? redemptionIds)>> 
         ProcessTransactionAsync(
             User user, 
             Reward reward, 
@@ -91,9 +91,10 @@ public class RewardService : IRewardService
             var balance = await AddPointsAsync(user, reward, existingBalance, request.PointsChange);
 
             // 2. Claim rewards if requested (deduct points and create redemptions)
+            List<Guid>? redemptionIds = null;
             if (request.NumRewardsToClaim > 0)
             {
-                await ClaimRewardsAsync(user, reward, balance, request.NumRewardsToClaim);
+                redemptionIds = await ClaimRewardsAsync(user, reward, balance, request.NumRewardsToClaim);
             }
 
             // 3. Create scan event
@@ -102,11 +103,11 @@ public class RewardService : IRewardService
             // 4. Save all changes
             await _repository.SaveChangesAsync();
 
-            return Result<(UserBalance, ScanEvent)>.Success((balance, scanEvent));
+            return Result<(UserBalance, ScanEvent, List<Guid>?)>.Success((balance, scanEvent, redemptionIds));
         }
         catch (Exception ex)
         {
-            return Result<(UserBalance, ScanEvent)>.Failure($"Transaction failed: {ex.Message}");
+            return Result<(UserBalance, ScanEvent, List<Guid>?)>.Failure($"Transaction failed: {ex.Message}");
         }
     }
 
@@ -135,24 +136,30 @@ public class RewardService : IRewardService
         return existing;
     }
 
-    private async Task ClaimRewardsAsync(User user, Reward reward, UserBalance balance, int count)
+    private async Task<List<Guid>> ClaimRewardsAsync(User user, Reward reward, UserBalance balance, int count)
     {
         var totalCost = reward.CostPoints * count;
         balance.Balance -= totalCost;
         balance.LastUpdated = DateTime.UtcNow;
 
+        var redemptionIds = new List<Guid>();
+
         for (int i = 0; i < count; i++)
         {
+            var redemptionId = Guid.NewGuid();
             var redemption = new RewardRedemption
             {
-                Id = Guid.NewGuid(),
+                Id = redemptionId,
                 UserId = user.Id,
                 RewardId = reward.Id,
                 RewardOwnerUserId = null, // Can be set if you track who processed the redemption
                 RedeemedAt = DateTime.UtcNow
             };
             await _repository.CreateRewardRedemption(redemption);
+            redemptionIds.Add(redemptionId);
         }
+
+        return redemptionIds;
     }
 
     private async Task<ScanEvent> CreateScanEventAsync(User user, Reward reward, ScanEventForCreationDto request)
@@ -175,7 +182,9 @@ public class RewardService : IRewardService
         User user, 
         Reward reward, 
         UserBalance balance,
-        ScanEvent scanEvent)
+        ScanEvent scanEvent,
+        int numRewardsClaimed,
+        List<Guid>? redemptionIds)
     {
         var response = new ScanEventResponseDto
         {
@@ -184,8 +193,21 @@ public class RewardService : IRewardService
             CurrentBalance = balance.Balance,
             RewardAvailable = false,
             AvailableReward = null,
-            TimesClaimable = 0
+            TimesClaimable = 0,
+            ClaimedRewards = null
         };
+
+        // Add claimed rewards info if any were claimed
+        if (numRewardsClaimed > 0 && redemptionIds != null)
+        {
+            response.ClaimedRewards = new ClaimedRewardsDto
+            {
+                NumberClaimed = numRewardsClaimed,
+                RewardName = reward.Name,
+                TotalPointsDeducted = reward.CostPoints * numRewardsClaimed,
+                RedemptionIds = redemptionIds
+            };
+        }
 
         // Check if rewards are still available after this transaction
         if (reward.RewardType == RewardType.IncrementalPoints && 
@@ -205,4 +227,91 @@ public class RewardService : IRewardService
 
         return response;
     }
+
+    public async Task<Result<UserBalanceAndInfoResponseDto>> GetUserBalanceForRewardAsync(
+        Guid rewardId, 
+        string qrCodeValue)
+    {
+        // 1. Validate user and reward exist
+        var validationResult = await ValidateUserAndRewardAsync(rewardId, qrCodeValue);
+        if (validationResult.IsFailure)
+            return Result<UserBalanceAndInfoResponseDto>.Failure(validationResult.Error!);
+
+        var (user, reward) = validationResult.Value;
+
+        // 2. Get user balance
+        var balance = await _repository.GetUserBalanceForRewardAsync(user.Id, rewardId);
+
+        // 3. Build response
+        var response = BuildUserBalanceResponse(user, reward, balance, qrCodeValue);
+
+        return Result<UserBalanceAndInfoResponseDto>.Success(response);
+    }
+
+    private async Task<Result<(User user, Reward reward)>> ValidateUserAndRewardAsync(
+        Guid rewardId, 
+        string qrCodeValue)
+    {
+        var user = await _repository.GetUserByQrCodeValueAsync(qrCodeValue);
+        if (user == null)
+            return Result<(User, Reward)>.Failure("User not found");
+
+        var reward = await _repository.GetRewardAsync(rewardId);
+        if (reward == null)
+            return Result<(User, Reward)>.Failure("Reward not found");
+
+        return Result<(User, Reward)>.Success((user, reward));
+    }
+
+    private UserBalanceAndInfoResponseDto BuildUserBalanceResponse(
+        User user, 
+        Reward reward, 
+        UserBalance? balance,
+        string qrCodeValue)
+    {
+        var response = new UserBalanceAndInfoResponseDto
+        {
+            QrCodeValue = qrCodeValue,
+            UserName = user.Name,
+            CurrentBalance = balance?.Balance ?? 0,
+            AvailableReward = null,
+            TimesClaimable = 0
+        };
+
+        // If no balance exists, return empty response
+        if (balance == null)
+            return response;
+
+        // Check if reward is available based on reward type
+        if (reward.RewardType == RewardType.IncrementalPoints && 
+            reward.CostPoints > 0 && 
+            balance.Balance >= reward.CostPoints)
+        {
+            response.TimesClaimable = balance.Balance / reward.CostPoints;
+            response.AvailableReward = new AvailableRewardDto
+            {
+                RewardId = reward.Id,
+                RewardName = reward.Name,
+                RewardType = "incremental_points",
+                RequiredPoints = reward.CostPoints
+            };
+        }
+
+        return response;
+    }
+
+    public async Task<Result<ScanEventDto>> GetScanEventForRewardAsync(
+        Guid rewardId, 
+        Guid scanEventId)
+    {
+        var scanEvent = await _repository.GetScanEventAsync(rewardId, scanEventId);
+        
+        if (scanEvent == null)
+            return Result<ScanEventDto>.Failure("Scan event not found");
+
+        var scanEventDto = _mapper.Map<ScanEventDto>(scanEvent);
+        return Result<ScanEventDto>.Success(scanEventDto);
+    }
 }
+
+

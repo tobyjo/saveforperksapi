@@ -1,12 +1,14 @@
 using AutoMapper;
+using Azure.Identity;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
-using Serilog.Events;
-using System.Diagnostics;
 using SaveForPerksAPI.DbContexts;
 using SaveForPerksAPI.Repositories;
 using SaveForPerksAPI.Services;
+using Serilog;
+using Serilog.Events;
+using System.Diagnostics;
+
 
 // Configure Serilog FIRST (before building the app)
 Log.Logger = new LoggerConfiguration()
@@ -48,9 +50,32 @@ try
         */
     });
 
+    // Configure Azure Key Vault integration
+    var keyVaultName = builder.Configuration["Azure:KeyVaultName"];
+    Log.Information("STARTUP: Attempting to connect to Key Vault: {KeyVaultUri}", keyVaultName);
 
-// Add services to the container.
-builder.Services.AddDbContext<TapForPerksContext>(options =>
+    if (!string.IsNullOrEmpty(keyVaultName))
+    {
+        try
+        {
+            var keyVaultUri = new Uri($"https://{keyVaultName}.vault.azure.net/");
+            builder.Configuration.AddAzureKeyVault(keyVaultUri, new DefaultAzureCredential());
+
+        }
+        catch (Exception ex)
+        {
+            // Add logging for Key Vault connection failure
+            Log.Error(ex, "STARTUP: Failed to connect to Key Vault: {KeyVaultName}", keyVaultName);
+        }
+    }
+    else
+    {
+        Console.WriteLine("STARTUP: No Key Vault configured");
+    }
+
+
+    // Add services to the container.
+    builder.Services.AddDbContext<TapForPerksContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<ISaveForPerksRepository, SaveForPerksRepository>();

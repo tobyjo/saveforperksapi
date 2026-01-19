@@ -8,6 +8,7 @@ using SaveForPerksAPI.Services;
 using Serilog;
 using Serilog.Events;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 
 // Configure Serilog FIRST (before building the app)
@@ -52,12 +53,11 @@ try
 
     // Configure Azure Key Vault integration
     var keyVaultName = builder.Configuration["Azure:KeyVaultName"];
-    Log.Information("STARTUP: Attempting to connect to Key Vault: {KeyVaultUri}", keyVaultName);
-
     if (!string.IsNullOrEmpty(keyVaultName))
     {
         try
         {
+            Log.Information("STARTUP: Attempting to connect to Key Vault: {KeyVaultUri}", keyVaultName);
             var keyVaultUri = new Uri($"https://{keyVaultName}.vault.azure.net/");
             builder.Configuration.AddAzureKeyVault(keyVaultUri, new DefaultAzureCredential());
 
@@ -70,7 +70,7 @@ try
     }
     else
     {
-        Console.WriteLine("STARTUP: No Key Vault configured");
+        Log.Information("STARTUP: No Key Vault configured");
     }
 
 

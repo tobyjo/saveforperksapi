@@ -20,6 +20,8 @@ namespace SaveForPerksAPI.Controllers.RewardOwner
         [HttpGet("{rewardId}/events/{scanEventId}", Name = "GetScanEventForReward")]
         public async Task<ActionResult<ScanEventDto>> GetScanEventForReward(Guid rewardId, Guid scanEventId)
         {
+            Logger.LogInformation("GetScanEventForReward called with RewardId: {RewardId}, ScanEventId: {ScanEventId}", rewardId, scanEventId);
+            
             return await ExecuteAsync(
                 () => rewardService.GetScanEventForRewardAsync(rewardId, scanEventId),
                 nameof(GetScanEventForReward));
@@ -30,6 +32,8 @@ namespace SaveForPerksAPI.Controllers.RewardOwner
             Guid rewardId, 
             string qrCodeValue)
         {
+            Logger.LogInformation("GetUserBalanceForReward called with RewardId: {RewardId}, QrCodeValue: {QrCodeValue}", rewardId, qrCodeValue);
+            
             return await ExecuteAsync(
                 () => rewardService.GetUserBalanceForRewardAsync(rewardId, qrCodeValue),
                 nameof(GetUserBalanceForReward));
@@ -39,6 +43,9 @@ namespace SaveForPerksAPI.Controllers.RewardOwner
         public async Task<ActionResult<ScanEventResponseDto>> CreatePointsAndClaimRewards(
             ScanEventForCreationDto scanEventForCreationDto)
         {
+            Logger.LogInformation("CreatePointsAndClaimRewards called with RewardId: {RewardId}, QrCodeValue: {QrCodeValue}", 
+                scanEventForCreationDto.RewardId, scanEventForCreationDto.QrCodeValue);
+            
             return await ExecuteCreatedAsync(
                 () => rewardService.ProcessScanAndRewardsAsync(scanEventForCreationDto),
                 "GetScanEventForReward",
@@ -49,6 +56,8 @@ namespace SaveForPerksAPI.Controllers.RewardOwner
         [HttpGet("History")]
         public Task<ActionResult<IEnumerable<RewardOwnerDto>>> GetScansHistoryForReward()
         {
+            Logger.LogInformation("GetScansHistoryForReward called");
+            
             return Task.FromResult<ActionResult<IEnumerable<RewardOwnerDto>>>(Ok(true));
         }
     }

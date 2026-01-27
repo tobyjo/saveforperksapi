@@ -23,6 +23,14 @@ public class RewardService : IRewardService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
+    public async Task<Result<RewardOwnerWithAdminUserForCreationDto>> CreateRewardOwnerAsync(
+        RewardOwnerWithAdminUserForCreationDto request)
+    {
+        // Implementation for creating reward owner with admin user
+        // This is a placeholder as the original request did not include this method's implementation
+        throw new NotImplementedException();
+    }
+
     public async Task<Result<ScanEventResponseDto>> ProcessScanAndRewardsAsync(
         ScanEventForCreationDto request)
     {

@@ -5,6 +5,9 @@ namespace SaveForPerksAPI.Services;
 
 public interface IRewardService
 {
+    Task<Result<RewardOwnerWithAdminUserForCreationDto>> CreateRewardOwnerAsync(
+        RewardOwnerWithAdminUserForCreationDto rewardOwnerWithAdminUserForCreationDto);
+
     Task<Result<ScanEventResponseDto>> ProcessScanAndRewardsAsync(
         ScanEventForCreationDto request);
     

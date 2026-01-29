@@ -62,7 +62,7 @@ public class RewardServiceIntegrationTests : IDisposable
             AuthProviderId = "auth-123",
             CreatedAt = DateTime.UtcNow
         };
-        _fixture.Context.Users.Add(testUser);
+        _fixture.Context.User.Add(testUser);
         await _fixture.Context.SaveChangesAsync();
         
         // Now query via Repository - should find the same user
@@ -403,7 +403,7 @@ public class RewardServiceIntegrationTests : IDisposable
         var balance = await _testData.CreateUserBalance(user, reward, balance: 12);
 
         // VERIFY: User was created in in-memory database with correct name
-        var verifyUser = await _fixture.Context.Users.FirstAsync(u => u.Id == user.Id);
+        var verifyUser = await _fixture.Context.User.FirstAsync(u => u.Id == user.Id);
         verifyUser.Name.Should().Be("TestOnlyUser", "because we created a user in the test data");
 
         // Act

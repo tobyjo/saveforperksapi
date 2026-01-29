@@ -1,0 +1,118 @@
+@testtoken = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InZKaTB5Z0FWd0ZhcnFCZk9sODAzLSJ9.eyJpc3MiOiJodHRwczovL2Rldi1pc2RzbnpsNThwZ214M2t3LnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJyTEZncGlXNml6WVFRWDUyc0JqQ29qbThwZjA3d1RnekBjbGllbnRzIiwiYXVkIjoidGltZXRyYWNrZXIiLCJpYXQiOjE3NjMyMjU4MTgsImV4cCI6MTc2MzMxMjIxOCwiZ3R5IjoiY2xpZW50LWNyZWRlbnRpYWxzIiwiYXpwIjoickxGZ3BpVzZpellRUVg1MnNCakNvam04cGYwN3dUZ3oifQ.UnAqA5vO0XQsmIOlDinUAx6gaYnPGlOQuib4N0x0r1hXYAyECIfZcTuGIVmNHcrG0mZLamCo5-vHhahHjq0kEydXK-votzA_6Z__GKW1L7KouPePlleEX3kWtsCryV1URYmZF53j2GiGAk6wb6ZTXsWH0pPW-b2y8rBb84rto6gm2PP3iKRqsuqG3eOkf_8TVTQTxxwZNvtCttAM5c1hH2beKNPTkhEZgXH7HsFi5ckJRLipINhvVYL_yM18sHIt5Pn-2BXm0sfwdCkb1XFwPO745_eSCV6tsCZjDga1lIN1eFEFq8GOsurn_muqgF2WEK2DBUj_8S722xFJ2ErDRg
+# @url = https://saveforperks-webapi-g4cpbzf4dpbqd9cd.uksouth-01.azurewebsites.net/api/
+@url = http://localhost:5143/api/
+@contentType = application/json
+
+# *************** HEALTH CHECK **************************
+
+###
+GET {{url}}health
+
+
+# *************** ADMIN **************************
+
+###
+GET {{url}}admin/reward-owners
+
+
+# *************** REWARD OWNER **************************
+
+# Create a new reward owner along with the first read owner user who will be set to admin.
+###
+POST {{url}}reward-owner
+Content-Type: application/json
+
+{
+"RewardOwnerName": "Joes coffee shop",
+"RewardOwnerDescription": "A nice coffee sop",
+"RewardOwnerUserAuthProviderId": "auth01234",
+"RewardOwnerUserEmail": "joe@example.com",
+"RewardOwnerUserName": "Joe Admin"
+}
+
+# Get the Rewardowner for a RewardOwnerUser - used to check business name has been recorded at signup
+###
+GET {{url}}reward-owner-user/989A2917-7682-4F78-85E6-274CB5DCCFDA/reward-owners
+
+
+# Get Rewards for a rewardOwnerId
+###
+GET {{url}}reward-owner/989A2917-7682-4F78-85E6-274CB5DCCFDA/rewards
+
+
+# Create a new Reward
+###
+POST {{url}}reward-owner/989A2917-7682-4F78-85E6-274CB5DCCFDA/rewards
+Content-Type: application/json
+
+{
+  "name": "Free Coffee",
+  "rewardType": "IncrementalPoints",
+  "costPoints": 10
+}
+
+# Reward Owner User
+###
+GET {{url}}reward-owner-user/by-auth/auth0|6978c6069f7c25664b0c13cf
+
+# Initial scan of qr code
+###
+GET {{url}}reward-owner/scans/33333333-3333-3333-3333-333333333333/userbalance/QR001-ALICE-9999
+
+# Initial scan of qr code
+###
+GET {{url}}reward-owner/scans/33333333-3333-3333-3333-333333333333/userbalance/QR002-BOB-AAAA
+
+# 1 Expect current balance of 2
+# Scan a users qr code to claim points for a reward and also reward redemption
+###
+POST {{url}}reward-owner/scans
+Content-Type: application/json
+
+{
+  "RewardId": "33333333-3333-3333-3333-333333333333",
+  "RewardOwnerUserId": "A1111111-1111-1111-1111-111111111111",
+  "QrCodeValue": "QR001-ALICE-9999",
+  "PointsChange": 4,
+  "NumRewardsToClaim": 0
+}
+
+# 2 Expect current balance of 5
+###
+POST {{url}}reward-owner/scans
+Content-Type: application/json
+
+{
+  "RewardId": "33333333-3333-3333-3333-333333333333",
+  "RewardOwnerUserId": "A1111111-1111-1111-1111-111111111111",
+  "QrCodeValue": "QR001-ALICE-9999",
+  "PointsChange": 5,
+  "NumRewardsToClaim": 0
+}
+
+# 3 Expect currentBalance to be 2 now (7-5
+###
+POST {{url}}reward-owner/scans
+Content-Type: application/json
+
+{
+  "RewardId": "33333333-3333-3333-3333-333333333333",
+  "RewardOwnerUserId": "A1111111-1111-1111-1111-111111111111",
+  "QrCodeValue": "QR001-ALICE-9999",
+  "PointsChange": 1,
+  "NumRewardsToClaim": 1
+}
+
+
+
+# User wants to claim their reward(s) - possibly delete this if already done above
+###
+POST {{url}}reward-owner/redemption
+Content-Type: application/json
+
+{
+  "RewardId": "33333333-3333-3333-3333-333333333333",
+  "RewardOwnerUserId": "A1111111-1111-1111-1111-111111111111",
+  "QrCodeValue": "QR001-ALICE-9999",
+  "NumRewardsToClaim": 1
+}

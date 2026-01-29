@@ -10,7 +10,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
     {
         builder.HasKey(e => e.Id).HasName("PK__users__3213E83F4461F44E");
 
-        builder.ToTable("users");
+        builder.ToTable("user");
 
         builder.HasIndex(e => e.Email, "UQ__users__AB6E6164CB0A1AE0").IsUnique();
         builder.HasIndex(e => e.AuthProviderId, "UQ__users__C82CBBE99CDF45A3").IsUnique();

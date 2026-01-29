@@ -37,7 +37,7 @@ public class QrCodeService : IQrCodeService
 
     public async Task<bool> IsQrCodeUniqueAsync(string qrCodeValue)
     {
-        return !await _context.Users
+        return !await _context.User
             .AnyAsync(u => u.QrCodeValue == qrCodeValue);
     }
 }

@@ -45,7 +45,7 @@ namespace SaveForPerksAPI.Repositories
 
         public async Task<User?> GetUserByQrCodeValueAsync(string qrCodeValue)
             {
-            return await _context.Users
+            return await _context.User
                 .Where(u => u.QrCodeValue == qrCodeValue)
                 .FirstOrDefaultAsync();
         }

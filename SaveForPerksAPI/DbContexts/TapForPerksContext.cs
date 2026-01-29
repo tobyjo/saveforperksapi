@@ -17,7 +17,7 @@ public class TapForPerksContext : DbContext
     public DbSet<Reward> Rewards { get; set; }
     public DbSet<RewardRedemption> RewardRedemptions { get; set; }
     public DbSet<ScanEvent> ScanEvents { get; set; }
-    public DbSet<User> Users { get; set; }
+    public DbSet<User> User { get; set; }
     public DbSet<UserBalance> UserBalances { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

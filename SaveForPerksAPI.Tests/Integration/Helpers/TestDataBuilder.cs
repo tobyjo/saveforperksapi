@@ -33,7 +33,7 @@ public class TestDataBuilder
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.Users.Add(user);
+        _context.User.Add(user);
         await _context.SaveChangesAsync();
         return user;
     }

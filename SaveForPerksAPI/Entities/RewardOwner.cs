@@ -14,7 +14,11 @@ public class RewardOwner
 
     public string? Metadata { get; set; }
 
+    public Guid? CategoryId { get; set; }  // Foreign key to RewardOwnerCategory
+
     public DateTime CreatedAt { get; set; }
+
+    public virtual RewardOwnerCategory? Category { get; set; }  // Navigation property
 
     public virtual ICollection<RewardOwnerUser> RewardOwnerUsers { get; set; } = new List<RewardOwnerUser>();
 

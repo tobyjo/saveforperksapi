@@ -34,6 +34,16 @@ public class RewardOwnerConfiguration : IEntityTypeConfiguration<RewardOwner>
         builder.Property(e => e.Description)
             .HasColumnName("Description");
 
+        builder.Property(e => e.CategoryId)
+            .HasColumnName("category_id");
+
+        // Foreign key relationship
+        builder.HasOne(e => e.Category)
+            .WithMany(c => c.RewardOwners)
+            .HasForeignKey(e => e.CategoryId)
+            .HasConstraintName("fk_reward_owner_category")
+            .OnDelete(DeleteBehavior.SetNull);
+
         // Seed data
         builder.HasData(
             new RewardOwner

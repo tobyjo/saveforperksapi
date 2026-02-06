@@ -13,6 +13,7 @@ public class TapForPerksContext : DbContext
     }
 
     public DbSet<RewardOwner> RewardOwners { get; set; }
+    public DbSet<RewardOwnerCategory> RewardOwnerCategories { get; set; }
     public DbSet<RewardOwnerUser> RewardOwnerUsers { get; set; }
     public DbSet<Reward> Rewards { get; set; }
     public DbSet<RewardRedemption> RewardRedemptions { get; set; }

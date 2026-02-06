@@ -12,6 +12,8 @@ namespace SaveForPerksAPI.Profiles
             // From DTO to database entity
             CreateMap<Models.RewardOwnerDto, Entities.RewardOwner>()
                 .ForMember(dest => dest.Metadata, opt => opt.Ignore())
+                .ForMember(dest => dest.CategoryId, opt => opt.Ignore())
+                .ForMember(dest => dest.Category, opt => opt.Ignore())
                 .ForMember(dest => dest.RewardOwnerUsers, opt => opt.Ignore())
                 .ForMember(dest => dest.Rewards, opt => opt.Ignore());
         }

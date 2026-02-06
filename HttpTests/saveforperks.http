@@ -2,6 +2,7 @@
 # @url = https://saveforperks-webapi-g4cpbzf4dpbqd9cd.uksouth-01.azurewebsites.net/api/
 @url = http://localhost:5143/api/
 @contentType = application/json
+@rewardOwnerUserId = "8BEAA728-0654-48F5-BC09-BAFBF6556CD0"
 
 # *************** HEALTH CHECK **************************
 
@@ -17,7 +18,7 @@ GET {{url}}admin/reward-owners
 
 # *************** REWARD OWNER **************************
 
-# Create a new reward owner along with the first read owner user who will be set to admin.
+# Step 10 - Create a new reward owner along with the first read owner user who will be set to admin.
 ###
 POST {{url}}reward-owner
 Content-Type: application/json
@@ -30,15 +31,29 @@ Content-Type: application/json
 "RewardOwnerUserName": "Joe Admin"
 }
 
-# Get the Rewardowner for a RewardOwnerUser - used to check business name has been recorded at signup
+# ***************** RewardOwnerUser ***************************
+# Step 20 - Get the RewardOwner details for a RewardOwnerUser - DEPRECATED
 ###
 GET {{url}}reward-owner-user/989A2917-7682-4F78-85E6-274CB5DCCFDA/reward-owners
 
+# Reward Owner User - DEPRECATED
+# Step 1: Get RewardOwnerUser by AuthProviderId
+###
+GET {{url}}reward-owner-user/by-auth/auth0|6978c6069f7c25664b0c13cf
+
+# Step 30 Get RewardOwnerUser and RewardOwner details and see if RewardOwner.Name has been completed (RewardProfileExists) 
+### Combine above two into one call
+GET {{url}}reward-owner-user/profile/auth0|6978c6069f7c25664b0c13cf
+
+# END Reward Owner User
+
+
 
 # Get Rewards for a rewardOwnerId
+# Step 30
 ###
 GET {{url}}reward-owner/989A2917-7682-4F78-85E6-274CB5DCCFDA/rewards
-
+X-RewardOwnerUser-Id: {{rewardOwnerUserId}}
 
 # Create a new Reward
 ###
@@ -51,9 +66,7 @@ Content-Type: application/json
   "costPoints": 10
 }
 
-# Reward Owner User
-###
-GET {{url}}reward-owner-user/by-auth/auth0|6978c6069f7c25664b0c13cf
+
 
 # Initial scan of qr code
 ###
@@ -61,7 +74,7 @@ GET {{url}}reward-owner/scans/33333333-3333-3333-3333-333333333333/userbalance/Q
 
 # Initial scan of qr code
 ###
-GET {{url}}reward-owner/scans/33333333-3333-3333-3333-333333333333/userbalance/QR002-BOB-AAAA
+GET {{url}}reward-owner/scans/33333333-3333-3333-3333-333333333333/userbalance/QR002-BOB-AAA
 
 # 1 Expect current balance of 2
 # Scan a users qr code to claim points for a reward and also reward redemption
@@ -70,11 +83,11 @@ POST {{url}}reward-owner/scans
 Content-Type: application/json
 
 {
-  "RewardId": "33333333-3333-3333-3333-333333333333",
-  "RewardOwnerUserId": "A1111111-1111-1111-1111-111111111111",
-  "QrCodeValue": "QR001-ALICE-9999",
+  "RewardId": "C9BA1B34-7D5D-4B24-954F-28D859FA5B9C",
+  "RewardOwnerUserId": "8BEAA728-0654-48F5-BC09-BAFBF6556CD0",
+  "QrCodeValue": "3C1GSPEEJIPL", 
   "PointsChange": 4,
-  "NumRewardsToClaim": 0
+  "NumRewardsToClaim": 2
 }
 
 # 2 Expect current balance of 5

@@ -9,11 +9,11 @@ public class RewardConfiguration : IEntityTypeConfiguration<Reward>
 {
     public void Configure(EntityTypeBuilder<Reward> builder)
     {
-        builder.HasKey(e => e.Id).HasName("PK__reward___3213E83F9D47D4D7");
+        builder.HasKey(e => e.Id);
 
         builder.ToTable("reward");
 
-        builder.HasIndex(e => e.RewardOwnerId, "idx_reward_owner_id");
+        builder.HasIndex(e => e.BusinessId);
         builder.Property(e => e.Id)
             .HasDefaultValueSql("(newid())")
             .HasColumnName("id");
@@ -25,8 +25,8 @@ public class RewardConfiguration : IEntityTypeConfiguration<Reward>
         builder.Property(e => e.IsActive)
             .HasColumnName("is_active");
 
-        builder.Property(e => e.RewardOwnerId)
-            .HasColumnName("reward_owner_id");
+        builder.Property(e => e.BusinessId)
+            .HasColumnName("business_id");
 
         builder.Property(e => e.CostPoints)
             .HasColumnName("cost_points");
@@ -46,17 +46,17 @@ public class RewardConfiguration : IEntityTypeConfiguration<Reward>
             .HasMaxLength(255)
             .HasColumnName("name");
 
-        builder.HasOne(d => d.RewardOwner)
+        builder.HasOne(d => d.Business)
             .WithMany(p => p.Rewards)
-            .HasForeignKey(d => d.RewardOwnerId)
-            .HasConstraintName("fk_reward_owner");
+            .HasForeignKey(d => d.BusinessId);
+
 
         // Seed data using enum
         builder.HasData(
             new Reward
             {
                 Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
-                RewardOwnerId = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                BusinessId = Guid.Parse("11111111-1111-1111-1111-111111111111"),
                 Name = "Pay for 5 coffees, get sixth free",
                 CostPoints = 5,
                 RewardType = RewardType.IncrementalPoints,

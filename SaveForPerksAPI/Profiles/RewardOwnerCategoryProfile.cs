@@ -8,6 +8,6 @@ public class RewardOwnerCategoryProfile : Profile
 {
     public RewardOwnerCategoryProfile()
     {
-        CreateMap<RewardOwnerCategory, RewardOwnerCategoryDto>();
+        CreateMap<BusinessCategory, BusinessCategoryDto>();
     }
 }

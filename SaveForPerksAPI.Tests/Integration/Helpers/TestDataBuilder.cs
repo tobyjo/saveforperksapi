@@ -9,21 +9,21 @@ namespace SaveForPerksAPI.Tests.Integration.Helpers;
 /// </summary>
 public class TestDataBuilder
 {
-    private readonly TapForPerksContext _context;
+    private readonly SaveForPerksContext _context;
 
-    public TestDataBuilder(TapForPerksContext context)
+    public TestDataBuilder(SaveForPerksContext context)
     {
         _context = context;
     }
 
     #region User Builders
 
-    public async Task<User> CreateUser(
-        string name = "Test User",
+    public async Task<Customer> CreateUser(
+        string name = "Test Customer",
         string qrCodeValue = "QR001-TEST-9999",
         string? email = null)
     {
-        var user = new User
+        var user = new Customer
         {
             Id = Guid.NewGuid(),
             Name = name,
@@ -33,7 +33,7 @@ public class TestDataBuilder
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.User.Add(user);
+        _context.Customer.Add(user);
         await _context.SaveChangesAsync();
         return user;
     }
@@ -42,24 +42,24 @@ public class TestDataBuilder
 
     #region Reward Owner Builders
 
-    public async Task<RewardOwnerUser> CreateRewardOwner(
+    public async Task<BusinessUser> CreateRewardOwner(
         string name = "Test Coffee Shop",
         string? email = null)
     {
-        var rewardOwner = new RewardOwner
+        var rewardOwner = new Business
         {
             Id = Guid.NewGuid(),
             Name = name,
             Description = $"{name} - Test Business",
             CreatedAt = DateTime.UtcNow
         };
-        _context.RewardOwners.Add(rewardOwner);
+        _context.Businesses.Add(rewardOwner);
         await _context.SaveChangesAsync();
 
-        var rewardOwnerUser = new RewardOwnerUser
+        var rewardOwnerUser = new BusinessUser
         {
             Id = Guid.NewGuid(),
-            RewardOwnerId = rewardOwner.Id,
+            BusinessId = rewardOwner.Id,
             Name = name,
             Email = email ?? $"{name.Replace(" ", "").ToLower()}@business.com",
             AuthProviderId = $"auth-{Guid.NewGuid()}",
@@ -67,7 +67,7 @@ public class TestDataBuilder
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.RewardOwnerUsers.Add(rewardOwnerUser);
+        _context.BusinessUsers.Add(rewardOwnerUser);
         await _context.SaveChangesAsync();
         return rewardOwnerUser;
     }
@@ -80,7 +80,7 @@ public class TestDataBuilder
         string name = "Free Coffee",
         int costPoints = 5,
         RewardType rewardType = RewardType.IncrementalPoints,
-        RewardOwnerUser? rewardOwner = null)
+        BusinessUser? rewardOwner = null)
     {
         // Create reward owner if not provided
         if (rewardOwner == null)
@@ -94,7 +94,7 @@ public class TestDataBuilder
             Name = name,
             CostPoints = costPoints,
             RewardType = rewardType,
-            RewardOwnerId = rewardOwner.RewardOwnerId,
+            BusinessId = rewardOwner.BusinessId,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -108,21 +108,21 @@ public class TestDataBuilder
 
     #region User Balance Builders
 
-    public async Task<UserBalance> CreateUserBalance(
-        User user,
+    public async Task<CustomerBalance> CreateUserBalance(
+        Customer user,
         Reward reward,
         int balance = 0)
     {
-        var userBalance = new UserBalance
+        var userBalance = new CustomerBalance
         {
             Id = Guid.NewGuid(),
-            UserId = user.Id,
+            CustomerId = user.Id,
             RewardId = reward.Id,
             Balance = balance,
             LastUpdated = DateTime.UtcNow
         };
 
-        _context.UserBalances.Add(userBalance);
+        _context.CustomerBalances.Add(userBalance);
         await _context.SaveChangesAsync();
         return userBalance;
     }
@@ -132,17 +132,17 @@ public class TestDataBuilder
     #region Scan Event Builders
 
     public async Task<ScanEvent> CreateScanEvent(
-        User user,
+        Customer user,
         Reward reward,
         int pointsChange = 1,
-        RewardOwnerUser? rewardOwner = null)
+        BusinessUser? rewardOwner = null)
     {
         var scanEvent = new ScanEvent
         {
             Id = Guid.NewGuid(),
-            UserId = user.Id,
+            CustomerId = user.Id,
             RewardId = reward.Id,
-            RewardOwnerUserId = rewardOwner?.Id,
+            BusinessUserId = rewardOwner?.Id,
             QrCodeValue = user.QrCodeValue,
             PointsChange = pointsChange,
             ScannedAt = DateTime.UtcNow
@@ -158,16 +158,16 @@ public class TestDataBuilder
     #region Reward Redemption Builders
 
     public async Task<RewardRedemption> CreateRewardRedemption(
-        User user,
+        Customer user,
         Reward reward,
-        RewardOwnerUser? rewardOwner = null)
+        BusinessUser? rewardOwner = null)
     {
         var redemption = new RewardRedemption
         {
             Id = Guid.NewGuid(),
-            UserId = user.Id,
+            CustomerId = user.Id,
             RewardId = reward.Id,
-            RewardOwnerUserId = rewardOwner?.Id,
+            BusinessUserId = rewardOwner?.Id,
             RedeemedAt = DateTime.UtcNow
         };
 
@@ -181,9 +181,9 @@ public class TestDataBuilder
     #region Scenario Builders (Common Test Scenarios)
 
     /// <summary>
-    /// Creates a complete scenario: User with points ready to claim a reward
+    /// Creates a complete scenario: Customer with points ready to claim a reward
     /// </summary>
-    public async Task<(User user, Reward reward, UserBalance balance)> CreateUserReadyToClaimReward(
+    public async Task<(Customer user, Reward reward, CustomerBalance balance)> CreateUserReadyToClaimReward(
         int currentPoints = 10,
         int rewardCost = 5)
     {
@@ -197,7 +197,7 @@ public class TestDataBuilder
     /// <summary>
     /// Creates a scenario: New user with no points yet
     /// </summary>
-    public async Task<(User user, Reward reward)> CreateNewUserScenario()
+    public async Task<(Customer user, Reward reward)> CreateNewUserScenario()
     {
         var user = await CreateUser("Bob", "QR002-BOB-8888");
         var reward = await CreateReward("Free Coffee", 5);
@@ -206,9 +206,9 @@ public class TestDataBuilder
     }
 
     /// <summary>
-    /// Creates a scenario: User with insufficient points
+    /// Creates a scenario: Customer with insufficient points
     /// </summary>
-    public async Task<(User user, Reward reward, UserBalance balance)> CreateUserWithInsufficientPoints(
+    public async Task<(Customer user, Reward reward, CustomerBalance balance)> CreateUserWithInsufficientPoints(
         int currentPoints = 3,
         int rewardCost = 5)
     {
@@ -220,9 +220,9 @@ public class TestDataBuilder
     }
 
     /// <summary>
-    /// Creates a scenario: User with scan history
+    /// Creates a scenario: Customer with scan history
     /// </summary>
-    public async Task<(User user, Reward reward, List<ScanEvent> scanEvents)> CreateUserWithScanHistory(
+    public async Task<(Customer user, Reward reward, List<ScanEvent> scanEvents)> CreateUserWithScanHistory(
         int numberOfScans = 5)
     {
         var user = await CreateUser("Diana", "QR004-DIANA-6666");

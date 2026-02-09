@@ -19,7 +19,7 @@ public class DatabaseFixture : IDisposable
 {
     private string _currentDatabaseName;
     
-    public TapForPerksContext Context { get; private set; }
+    public SaveForPerksContext Context { get; private set; }
     public ISaveForPerksRepository Repository { get; private set; }
     public IMapper Mapper { get; private set; }
     public ILogger<RewardTransactionService> Logger { get; private set; }
@@ -43,12 +43,12 @@ public class DatabaseFixture : IDisposable
         // Create NEW in-memory database with unique name
         _currentDatabaseName = Guid.NewGuid().ToString();
         
-        var options = new DbContextOptionsBuilder<TapForPerksContext>()
+        var options = new DbContextOptionsBuilder<SaveForPerksContext>()
             .UseInMemoryDatabase(databaseName: _currentDatabaseName) // Unique DB per reset
             .EnableSensitiveDataLogging()
             .Options;
 
-        Context = new TapForPerksContext(options);
+        Context = new SaveForPerksContext(options);
         
         // Ensure database is created (in-memory)
         Context.Database.EnsureCreated();
@@ -62,12 +62,12 @@ public class DatabaseFixture : IDisposable
             .Returns((ScanEvent se) => new ScanEventDto
             {
                 Id = se.Id,
-                UserId = se.UserId,
+                CustomerId = se.CustomerId,
                 RewardId = se.RewardId,
                 QrCodeValue = se.QrCodeValue,
                 PointsChange = se.PointsChange,
                 ScannedAt = se.ScannedAt,
-                RewardOwnerUserId = se.RewardOwnerUserId
+                BusinessUserId = se.BusinessUserId
             });
         Mapper = mockMapper.Object;
 

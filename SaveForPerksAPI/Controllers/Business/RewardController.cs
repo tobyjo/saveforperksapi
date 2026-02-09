@@ -1,0 +1,59 @@
+using Microsoft.AspNetCore.Mvc;
+using SaveForPerksAPI.Models;
+using SaveForPerksAPI.Services;
+
+namespace SaveForPerksAPI.Controllers.Business
+{
+    [Route("api/business/{businessId}/rewards")]
+    public class RewardController : BaseApiController
+    {
+        private readonly IRewardManagementService _rewardManagementService;
+
+        public RewardController(
+            IRewardManagementService rewardManagementService,
+            ILogger<RewardController> logger)
+            : base(logger)
+        {
+            _rewardManagementService = rewardManagementService ?? throw new ArgumentNullException(nameof(rewardManagementService));
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<RewardDto>> CreateReward(
+            Guid rewardOwnerId,
+            [FromBody] RewardForCreationDto rewardForCreationDto,
+            [FromHeader(Name = "X-BusinessUser-Id")] Guid businessUserId)
+        {
+            Logger.LogInformation(
+                "CreateReward called with BusinessId: {BusinessId}, Name: {Name}, Type: {Type}, CostPoints: {CostPoints}, BusinessUserId: {BusinessUserId}",
+                rewardOwnerId, 
+                rewardForCreationDto.Name,
+                rewardForCreationDto.RewardType,
+                rewardForCreationDto.CostPoints,
+                businessUserId);
+
+            // Override the RewardOwnerId from the route parameter
+            rewardForCreationDto.BusinessId = rewardOwnerId;
+
+            return await ExecuteAsync(
+                () => _rewardManagementService.CreateRewardAsync(rewardForCreationDto, businessUserId),
+                nameof(CreateReward));
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<RewardDto>>> GetRewards(
+            Guid businessId,
+            [FromHeader(Name = "X-BusinessUser-Id")] Guid businessUserId)
+        {
+            Logger.LogInformation(
+                "GetRewards called with BusinessId: {BusinessId}, BusinessUserId: {BusinessUserId}",
+                businessId,
+                businessUserId);
+
+            return await ExecuteAsync(
+                () => _rewardManagementService.GetRewardsByBusinessIdAsync(businessId, businessUserId),
+                nameof(GetRewards));
+        }
+
+        // CRUD endpoints for Reward will be added here
+    }
+}

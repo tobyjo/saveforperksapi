@@ -7,8 +7,8 @@ namespace SaveForPerksAPI.Models
         [Required(ErrorMessage = "Reward ID is required")]
         public Guid RewardId { get; set; }
 
-        [Required(ErrorMessage = "RewardOwnerUserId is required")]
-        public Guid? RewardOwnerUserId { get; set; }
+        [Required(ErrorMessage = "BusinessUserId is required")]
+        public Guid? BusinessUserId { get; set; }
 
         [Required(ErrorMessage = "QR Code value is required")]
         public string QrCodeValue { get; set; } = null!;

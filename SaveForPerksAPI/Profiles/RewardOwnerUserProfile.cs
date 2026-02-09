@@ -6,10 +6,10 @@ public class RewardOwnerUserProfile : Profile
 {
     public RewardOwnerUserProfile()
     {
-        CreateMap<Entities.RewardOwnerUser, Models.RewardOwnerUserDto>();
+        CreateMap<Entities.BusinessUser, Models.BusinessUserDto>();
         
-        CreateMap<Models.RewardOwnerUserDto, Entities.RewardOwnerUser>()
-            .ForMember(dest => dest.RewardOwner, opt => opt.Ignore())
+        CreateMap<Models.BusinessUserDto, Entities.BusinessUser>()
+            .ForMember(dest => dest.Business, opt => opt.Ignore())
             .ForMember(dest => dest.RewardRedemptions, opt => opt.Ignore())
             .ForMember(dest => dest.ScanEvents, opt => opt.Ignore());
     }

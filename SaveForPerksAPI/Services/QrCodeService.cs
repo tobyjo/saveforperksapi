@@ -7,9 +7,9 @@ namespace SaveForPerksAPI.Services;
 
 public class QrCodeService : IQrCodeService
 {
-    private readonly TapForPerksContext _context;
+    private readonly SaveForPerksContext _context;
 
-    public QrCodeService(TapForPerksContext context)
+    public QrCodeService(SaveForPerksContext context)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
     }
@@ -37,7 +37,7 @@ public class QrCodeService : IQrCodeService
 
     public async Task<bool> IsQrCodeUniqueAsync(string qrCodeValue)
     {
-        return !await _context.User
+        return !await _context.Customer
             .AnyAsync(u => u.QrCodeValue == qrCodeValue);
     }
 }

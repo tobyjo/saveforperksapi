@@ -5,13 +5,13 @@ namespace SaveForPerksAPI.Services;
 
 public interface IRewardTransactionService
 {
-    Task<Result<RewardOwnerWithAdminUserResponseDto>> CreateRewardOwnerAsync(
-        RewardOwnerWithAdminUserForCreationDto rewardOwnerWithAdminUserForCreationDto);
+    Task<Result<BusinessWithAdminUserResponseDto>> CreateBusinessAsync(
+        BusinessWithAdminUserForCreationDto businessWithAdminUserForCreationDto);
 
     Task<Result<ScanEventResponseDto>> ProcessScanAndRewardsAsync(
         ScanEventForCreationDto request);
     
-    Task<Result<UserBalanceAndInfoResponseDto>> GetUserBalanceForRewardAsync(
+    Task<Result<CustomerBalanceAndInfoResponseDto>> GetCustomerBalanceForRewardAsync(
         Guid rewardId, 
         string qrCodeValue);
     

@@ -11,17 +11,17 @@ public class RewardRedemptionProfile : Profile
 
         // From DTO to database
         CreateMap<Models.RewardRedemptionDto, Entities.RewardRedemption>()
-            .ForMember(dest => dest.RewardOwnerUser, opt => opt.Ignore())
+            .ForMember(dest => dest.BusinessUser, opt => opt.Ignore())
             .ForMember(dest => dest.Reward, opt => opt.Ignore())
-            .ForMember(dest => dest.User, opt => opt.Ignore());
+            .ForMember(dest => dest.Customer, opt => opt.Ignore());
 
         // From DTO to database
         CreateMap<Models.RewardRedemptionForCreationDto, Entities.RewardRedemption>()
-             .ForMember(dest => dest.RewardOwnerUser, opt => opt.Ignore())
+             .ForMember(dest => dest.BusinessUser, opt => opt.Ignore())
             .ForMember(dest => dest.Reward, opt => opt.Ignore())
-            .ForMember(dest => dest.User, opt => opt.Ignore())
+            .ForMember(dest => dest.Customer, opt => opt.Ignore())
              .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.RedeemedAt, opt => opt.Ignore())
-            .ForMember(dest => dest.UserId, opt => opt.Ignore());
+            .ForMember(dest => dest.CustomerId, opt => opt.Ignore());
     }
 }

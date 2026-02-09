@@ -4,8 +4,8 @@ namespace SaveForPerksAPI.Models
 {
     public class RewardForCreationDto
     {
-        [Required(ErrorMessage = "RewardOwnerId value is required")]
-        public Guid RewardOwnerId { get; set; }
+        [Required(ErrorMessage = "BusinessId value is required")]
+        public Guid BusinessId { get; set; }
 
         [Required(ErrorMessage = "Name value is required")]
         public string Name { get; set; } = string.Empty;

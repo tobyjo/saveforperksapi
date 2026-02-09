@@ -7,49 +7,49 @@ namespace SaveForPerksAPI.Repositories
     {
         Task<bool> SaveChangesAsync();
 
-        Task<IEnumerable<RewardOwner>> GetRewardOwnersAsync();
+        Task<IEnumerable<Business>> GetBusinessesAsync();
 
         Task<ScanEvent?> GetScanEventAsync(Guid rewardId, Guid scanEventId);
 
         Task CreateScanEvent(ScanEvent scanEvent);
 
-        Task<User?> GetUserByQrCodeValueAsync(string qrCodeValue);
+        Task<Customer?> GetCustomerByQrCodeValueAsync(string qrCodeValue);
 
-        Task<User?> GetUserByAuthProviderIdAsync(string authProviderId);
+        Task<Customer?> GetCustomerByAuthProviderIdAsync(string authProviderId);
 
-        Task<User?> GetUserByEmailAsync(string email);
+        Task<Customer?> GetCustomerByEmailAsync(string email);
 
-        Task CreateUserAsync(User user);
+        Task CreateCustomerAsync(Customer customer);
 
         Task<Reward?> GetRewardAsync(Guid rewardId);
 
-        Task<UserBalance?> GetUserBalanceForRewardAsync(Guid userId,  Guid rewardId);
+        Task<CustomerBalance?> GetCustomerBalanceForRewardAsync(Guid customerId,  Guid rewardId);
 
-        Task CreateUserBalance(UserBalance userBalance);
+        Task CreateUserBalance(CustomerBalance customerBalance);
 
         Task<RewardRedemption?> GetRewardRedemptionAsync(Guid rewardId, Guid rewardRedemptionId);
 
-        Task UpdateUserBalance(UserBalance userBalance);
+        Task UpdateCustomerBalance(CustomerBalance customerBalance);
 
         Task CreateRewardRedemption(RewardRedemption rewardRedemption);
 
-        Task<RewardOwnerUser?> GetRewardOwnerUserByEmailAsync(string email);
+        Task<BusinessUser?> GetBusinessUserByEmailAsync(string email);
 
-        Task CreateRewardOwnerAsync(RewardOwner rewardOwner);
+        Task CreateBusinessAsync(Business business);
 
-        Task CreateRewardOwnerUserAsync(RewardOwnerUser rewardOwnerUser);
+        Task CreateBusinessUserAsync(BusinessUser businessUser);
 
-        Task<RewardOwnerUser?> GetRewardOwnerUserByAuthProviderIdAsync(string authProviderId);
+        Task<BusinessUser?> GetBusinessUserByAuthProviderIdAsync(string authProviderId);
 
-        Task<RewardOwnerUser?> GetRewardOwnerUserByIdAsync(Guid rewardOwnerUserId);
+        Task<BusinessUser?> GetBusinessUserByIdAsync(Guid businessUserId);
 
-        Task<RewardOwner?> GetRewardOwnerByIdAsync(Guid rewardOwnerId);
+        Task<Business?> GetBusinessByIdAsync(Guid businessId);
 
-        Task<Reward?> GetRewardByRewardOwnerIdAsync(Guid rewardOwnerId);
+        Task<Reward?> GetRewardByBusinessIdAsync(Guid businessId);
 
         Task CreateRewardAsync(Reward reward);
 
-        Task<IEnumerable<RewardOwnerCategory>> GetAllRewardOwnerCategoriesAsync();
+        Task<IEnumerable<BusinessCategory>> GetAllBusinessCategoriesAsync();
 
     }
 }

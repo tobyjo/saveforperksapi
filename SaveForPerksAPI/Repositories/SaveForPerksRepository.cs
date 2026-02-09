@@ -8,8 +8,8 @@ namespace SaveForPerksAPI.Repositories
     public class SaveForPerksRepository : ISaveForPerksRepository
     {
 
-        private readonly TapForPerksContext _context;
-        public SaveForPerksRepository(TapForPerksContext context)
+        private readonly SaveForPerksContext _context;
+        public SaveForPerksRepository(SaveForPerksContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
@@ -20,9 +20,9 @@ namespace SaveForPerksAPI.Repositories
         }
 
 
-        public async Task<IEnumerable<RewardOwner>> GetRewardOwnersAsync()
+        public async Task<IEnumerable<Business>> GetBusinessesAsync()
         {
-            return await _context.RewardOwners.OrderBy(lo => lo.Name).ToListAsync();
+            return await _context.Businesses.OrderBy(lo => lo.Name).ToListAsync();
         }
   
 
@@ -43,34 +43,34 @@ namespace SaveForPerksAPI.Repositories
         }
 
 
-        public async Task<User?> GetUserByQrCodeValueAsync(string qrCodeValue)
+        public async Task<Customer?> GetCustomerByQrCodeValueAsync(string qrCodeValue)
             {
-            return await _context.User
+            return await _context.Customer
                 .Where(u => u.QrCodeValue == qrCodeValue)
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<User?> GetUserByAuthProviderIdAsync(string authProviderId)
+        public async Task<Customer?> GetCustomerByAuthProviderIdAsync(string authProviderId)
         {
-            return await _context.User
+            return await _context.Customer
                 .Where(u => u.AuthProviderId == authProviderId)
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<User?> GetUserByEmailAsync(string email)
+        public async Task<Customer?> GetCustomerByEmailAsync(string email)
         {
-            return await _context.User
+            return await _context.Customer
                 .Where(u => u.Email == email)
                 .FirstOrDefaultAsync();
         }
 
-        public async Task CreateUserAsync(User user)
+        public async Task CreateCustomerAsync(Customer customer)
         {
-            if (user == null)
+            if (customer == null)
             {
-                throw new ArgumentNullException(nameof(user));
+                throw new ArgumentNullException(nameof(customer));
             }
-            await _context.User.AddAsync(user);
+            await _context.Customer.AddAsync(customer);
         }
 
         public async Task<Reward?> GetRewardAsync(Guid rewardId)
@@ -80,20 +80,20 @@ namespace SaveForPerksAPI.Repositories
                 .FirstOrDefaultAsync();
         } 
 
-        public async Task<UserBalance?> GetUserBalanceForRewardAsync(Guid userId, Guid rewardId)
+        public async Task<CustomerBalance?> GetCustomerBalanceForRewardAsync(Guid customerId, Guid rewardId)
         {
-            return await _context.UserBalances
-                .Where(ub => ub.UserId == userId && ub.RewardId == rewardId)
+            return await _context.CustomerBalances
+                .Where(ub => ub.CustomerId == customerId && ub.RewardId == rewardId)
                 .FirstOrDefaultAsync();
         }
 
-        public async Task CreateUserBalance(UserBalance userBalance)
+        public async Task CreateUserBalance(CustomerBalance customerBalance)
         {
-            if (userBalance == null)
+            if (customerBalance == null)
             {
-                throw new ArgumentNullException(nameof(userBalance));
+                throw new ArgumentNullException(nameof(customerBalance));
             }
-            await _context.UserBalances.AddAsync(userBalance);
+            await _context.CustomerBalances.AddAsync(customerBalance);
         }
 
         public async Task<RewardRedemption?> GetRewardRedemptionAsync(Guid rewardId, Guid rewardRedemptionId)
@@ -103,7 +103,7 @@ namespace SaveForPerksAPI.Repositories
                 .FirstOrDefaultAsync();
         }
 
-        public async Task UpdateUserBalance(UserBalance userBalance)
+        public async Task UpdateCustomerBalance(CustomerBalance customerBalance)
         {
             // No implementation needed for EF Core as it tracks changes automatically
             await Task.CompletedTask;
@@ -118,56 +118,56 @@ namespace SaveForPerksAPI.Repositories
             await _context.RewardRedemptions.AddAsync(rewardRedemption);
         }
 
-        public async Task<RewardOwnerUser?> GetRewardOwnerUserByEmailAsync(string email)
+        public async Task<BusinessUser?> GetBusinessUserByEmailAsync(string email)
         {
-            return await _context.RewardOwnerUsers
+            return await _context.BusinessUsers
                 .Where(rou => rou.Email == email)
                 .FirstOrDefaultAsync();
         }
 
-        public async Task CreateRewardOwnerAsync(RewardOwner rewardOwner)
+        public async Task CreateBusinessAsync(Business business)
         {
-            if (rewardOwner == null)
+            if (business == null)
             {
-                throw new ArgumentNullException(nameof(rewardOwner));
+                throw new ArgumentNullException(nameof(business));
             }
-            await _context.RewardOwners.AddAsync(rewardOwner);
+            await _context.Businesses.AddAsync(business);
         }
 
-        public async Task CreateRewardOwnerUserAsync(RewardOwnerUser rewardOwnerUser)
+        public async Task CreateBusinessUserAsync(BusinessUser businessUser)
         {
-            if (rewardOwnerUser == null)
+            if (businessUser == null)
             {
-                throw new ArgumentNullException(nameof(rewardOwnerUser));
+                throw new ArgumentNullException(nameof(businessUser));
             }
-            await _context.RewardOwnerUsers.AddAsync(rewardOwnerUser);
+            await _context.BusinessUsers.AddAsync(businessUser);
         }
 
-        public async Task<RewardOwnerUser?> GetRewardOwnerUserByAuthProviderIdAsync(string authProviderId)
+        public async Task<BusinessUser?> GetBusinessUserByAuthProviderIdAsync(string authProviderId)
         {
-            return await _context.RewardOwnerUsers
+            return await _context.BusinessUsers
                 .Where(rou => rou.AuthProviderId == authProviderId)
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<RewardOwnerUser?> GetRewardOwnerUserByIdAsync(Guid rewardOwnerUserId)
+        public async Task<BusinessUser?> GetBusinessUserByIdAsync(Guid businessUserId)
         {
-            return await _context.RewardOwnerUsers
-                .Where(rou => rou.Id == rewardOwnerUserId)
+            return await _context.BusinessUsers
+                .Where(rou => rou.Id == businessUserId)
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<RewardOwner?> GetRewardOwnerByIdAsync(Guid rewardOwnerId)
+        public async Task<Business?> GetBusinessByIdAsync(Guid businessId)
         {
-            return await _context.RewardOwners
-                .Where(ro => ro.Id == rewardOwnerId)
+            return await _context.Businesses
+                .Where(ro => ro.Id == businessId)
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<Reward?> GetRewardByRewardOwnerIdAsync(Guid rewardOwnerId)
+        public async Task<Reward?> GetRewardByBusinessIdAsync(Guid businessId)
         {
             return await _context.Rewards
-                .Where(r => r.RewardOwnerId == rewardOwnerId)
+                .Where(r => r.BusinessId == businessId)
                 .FirstOrDefaultAsync();
         }
 
@@ -180,9 +180,9 @@ namespace SaveForPerksAPI.Repositories
             await _context.Rewards.AddAsync(reward);
         }
 
-        public async Task<IEnumerable<RewardOwnerCategory>> GetAllRewardOwnerCategoriesAsync()
+        public async Task<IEnumerable<BusinessCategory>> GetAllBusinessCategoriesAsync()
         {
-            return await _context.RewardOwnerCategories
+            return await _context.BusinessCategories
                 .OrderBy(c => c.Name)
                 .ToListAsync();
         }

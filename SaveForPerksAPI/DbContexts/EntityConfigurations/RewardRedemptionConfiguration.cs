@@ -8,19 +8,19 @@ public class RewardRedemptionConfiguration : IEntityTypeConfiguration<RewardRede
 {
     public void Configure(EntityTypeBuilder<RewardRedemption> builder)
     {
-        builder.HasKey(e => e.Id).HasName("PK__reward_r__3213E83FC9ADA235");
+        builder.HasKey(e => e.Id);
 
         builder.ToTable("reward_redemption");
 
-        builder.HasIndex(e => e.RewardId, "idx_reward_redemption_reward_id");
-        builder.HasIndex(e => e.UserId, "idx_reward_redemption_user_id");
+        builder.HasIndex(e => e.RewardId);
+        builder.HasIndex(e => e.CustomerId);
 
         builder.Property(e => e.Id)
             .HasDefaultValueSql("(newid())")
             .HasColumnName("id");
 
-        builder.Property(e => e.RewardOwnerUserId)
-            .HasColumnName("reward_owner_user_id");
+        builder.Property(e => e.BusinessUserId)
+            .HasColumnName("business_user_id");
 
         builder.Property(e => e.RewardId)
             .HasColumnName("reward_id");
@@ -29,24 +29,21 @@ public class RewardRedemptionConfiguration : IEntityTypeConfiguration<RewardRede
             .HasDefaultValueSql("(sysdatetime())")
             .HasColumnName("redeemed_at");
 
-        builder.Property(e => e.UserId)
+        builder.Property(e => e.CustomerId)
             .HasColumnName("user_id");
 
-        builder.HasOne(d => d.RewardOwnerUser)
+        builder.HasOne(d => d.BusinessUser)
             .WithMany(p => p.RewardRedemptions)
-            .HasForeignKey(d => d.RewardOwnerUserId)
-            .HasConstraintName("fk_reward_redemption_owner_user");
+            .HasForeignKey(d => d.BusinessUserId);
 
         builder.HasOne(d => d.Reward)
             .WithMany(p => p.RewardRedemptions)
             .HasForeignKey(d => d.RewardId)
-            .OnDelete(DeleteBehavior.ClientSetNull)
-            .HasConstraintName("fk_reward_redemption_programme");
+            .OnDelete(DeleteBehavior.ClientSetNull);
 
-        builder.HasOne(d => d.User)
+        builder.HasOne(d => d.Customer)
             .WithMany(p => p.RewardRedemptions)
-            .HasForeignKey(d => d.UserId)
-            .HasConstraintName("fk_reward_redemption_user");
+            .HasForeignKey(d => d.CustomerId);
 
         // No seed data for redemptions initially
     }

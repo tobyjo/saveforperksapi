@@ -83,7 +83,7 @@ try
 
 
     // Add services to the container.
-    builder.Services.AddDbContext<TapForPerksContext>(options =>
+    builder.Services.AddDbContext<SaveForPerksContext>(options =>
         options.UseSqlServer(
             builder.Configuration.GetConnectionString("SaveForPerksDBConnectionString"),
             sqlServerOptionsAction: sqlOptions =>
@@ -102,9 +102,9 @@ builder.Services.AddScoped<ISaveForPerksRepository, SaveForPerksRepository>();
 builder.Services.AddScoped<IQrCodeService, QrCodeService>();
 builder.Services.AddScoped<IRewardTransactionService, RewardTransactionService>();
 builder.Services.AddScoped<IRewardManagementService, RewardManagementService>();
-builder.Services.AddScoped<IRewardOwnerUserService, RewardOwnerUserService>();
-builder.Services.AddScoped<IRewardOwnerCategoryService, RewardOwnerCategoryService>();
-builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IBusinessUserService, BusinessUserService>();
+builder.Services.AddScoped<IBusinessCategoryService, BusinessCategoryService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

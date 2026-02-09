@@ -22,25 +22,25 @@ public class RewardManagementService : IRewardManagementService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<Result<RewardDto>> CreateRewardAsync(RewardForCreationDto request, Guid rewardOwnerUserId)
+    public async Task<Result<RewardDto>> CreateRewardAsync(RewardForCreationDto request, Guid businessUserId)
     {
         // 1. Validate request
         var validationResult = ValidateCreateRewardRequest(request);
         if (validationResult.IsFailure)
             return Result<RewardDto>.Failure(validationResult.Error!);
 
-        // 2. Verify RewardOwner exists
-        var rewardOwnerCheck = await VerifyRewardOwnerExistsAsync(request.RewardOwnerId);
-        if (rewardOwnerCheck.IsFailure)
-            return Result<RewardDto>.Failure(rewardOwnerCheck.Error!);
+        // 2. Verify Business exists
+        var businessCheck = await VerifyBusinessExistsAsync(request.BusinessId);
+        if (businessCheck.IsFailure)
+            return Result<RewardDto>.Failure(businessCheck.Error!);
 
-        // 3. Verify RewardOwnerUser belongs to RewardOwner
-        var userAuthCheck = await VerifyUserBelongsToRewardOwnerAsync(rewardOwnerUserId, request.RewardOwnerId);
+        // 3. Verify BusinessUser belongs to Business
+        var userAuthCheck = await VerifyUserBelongsToBusinessAsync(businessUserId, request.BusinessId);
         if (userAuthCheck.IsFailure)
             return Result<RewardDto>.Failure(userAuthCheck.Error!);
 
-        // 4. Check for existing reward for this RewardOwner
-        var existingRewardCheck = await CheckForExistingRewardAsync(request.RewardOwnerId);
+        // 4. Check for existing reward for this Business
+        var existingRewardCheck = await CheckForExistingRewardAsync(request.BusinessId);
         if (existingRewardCheck.IsFailure)
             return Result<RewardDto>.Failure(existingRewardCheck.Error!);
 
@@ -55,18 +55,18 @@ public class RewardManagementService : IRewardManagementService
         var rewardDto = _mapper.Map<RewardDto>(reward);
 
         _logger.LogInformation(
-            "Reward created successfully. RewardId: {RewardId}, RewardOwnerId: {RewardOwnerId}, Name: {Name}, Type: {Type}, CreatedBy: {UserId}",
-            reward.Id, reward.RewardOwnerId, reward.Name, reward.RewardType, rewardOwnerUserId);
+            "Reward created successfully. RewardId: {RewardId}, BusinessId: {BusinessId}, Name: {Name}, Type: {Type}, CreatedBy: {businessUserId}",
+            reward.Id, reward.BusinessId, reward.Name, reward.RewardType, businessUserId);
 
         return Result<RewardDto>.Success(rewardDto);
     }
 
     private Result<bool> ValidateCreateRewardRequest(RewardForCreationDto request)
     {
-        if (request.RewardOwnerId == Guid.Empty)
+        if (request.BusinessId == Guid.Empty)
         {
-            _logger.LogWarning("Validation failed: RewardOwnerId is empty");
-            return Result<bool>.Failure("Reward owner ID is required");
+            _logger.LogWarning("Validation failed: BusinessId is empty");
+            return Result<bool>.Failure("Business ID is required");
         }
 
         if (string.IsNullOrWhiteSpace(request.Name))
@@ -107,60 +107,60 @@ public class RewardManagementService : IRewardManagementService
         return Result<bool>.Success(true);
     }
 
-    private async Task<Result<bool>> VerifyRewardOwnerExistsAsync(Guid rewardOwnerId)
+    private async Task<Result<bool>> VerifyBusinessExistsAsync(Guid businessId)
     {
-        var rewardOwner = await _repository.GetRewardOwnerByIdAsync(rewardOwnerId);
+        var rewardOwner = await _repository.GetBusinessByIdAsync(businessId);
         if (rewardOwner == null)
         {
             _logger.LogWarning(
-                "RewardOwner not found. RewardOwnerId: {RewardOwnerId}", 
-                rewardOwnerId);
-            return Result<bool>.Failure("Reward owner not found");
+                "Business not found. BusinessId: {BusinessId}", 
+                businessId);
+            return Result<bool>.Failure("Business not found");
         }
 
         return Result<bool>.Success(true);
     }
 
-    private async Task<Result<bool>> VerifyUserBelongsToRewardOwnerAsync(Guid rewardOwnerUserId, Guid rewardOwnerId)
+    private async Task<Result<bool>> VerifyUserBelongsToBusinessAsync(Guid businessUserId, Guid businessId)
     {
-        if (rewardOwnerUserId == Guid.Empty)
+        if (businessUserId == Guid.Empty)
         {
-            _logger.LogWarning("RewardOwnerUserId is empty");
-            return Result<bool>.Failure("User ID is required");
+            _logger.LogWarning("BusinessUserId is empty");
+            return Result<bool>.Failure("Business Customer ID is required");
         }
 
-        var rewardOwnerUser = await _repository.GetRewardOwnerUserByIdAsync(rewardOwnerUserId);
+        var rewardOwnerUser = await _repository.GetBusinessUserByIdAsync(businessUserId);
         if (rewardOwnerUser == null)
         {
             _logger.LogWarning(
-                "RewardOwnerUser not found. UserId: {UserId}",
-                rewardOwnerUserId);
-            return Result<bool>.Failure("User not found");
+                "BusinessUser not found. BusinessUserId: {BusinessUserId}",
+                businessUserId);
+            return Result<bool>.Failure("Customer not found");
         }
 
-        if (rewardOwnerUser.RewardOwnerId != rewardOwnerId)
+        if (rewardOwnerUser.BusinessId != businessId)
         {
             _logger.LogWarning(
-                "Authorization failed: User does not belong to RewardOwner. UserId: {UserId}, UserRewardOwnerId: {UserRewardOwnerId}, RequestedRewardOwnerId: {RequestedRewardOwnerId}",
-                rewardOwnerUserId, rewardOwnerUser.RewardOwnerId, rewardOwnerId);
-            return Result<bool>.Failure("You do not have permission to manage this reward owner");
+                "Authorization failed: Business Customer does not belong to Business. CustomerId: {CustomerId}, UserRewardOwnerId: {UserRewardOwnerId}, RequestedRewardOwnerId: {RequestedRewardOwnerId}",
+                businessUserId, rewardOwnerUser.BusinessId, businessId);
+            return Result<bool>.Failure("You do not have permission to manage this business");
         }
 
         _logger.LogInformation(
-            "User authorization verified. UserId: {UserId}, RewardOwnerId: {RewardOwnerId}",
-            rewardOwnerUserId, rewardOwnerId);
+            "Customer authorization verified. BusinessUserId: {BusinessUserId}, BusinessId: {BusinessId}",
+            businessUserId, businessId);
 
         return Result<bool>.Success(true);
     }
 
-    private async Task<Result<bool>> CheckForExistingRewardAsync(Guid rewardOwnerId)
+    private async Task<Result<bool>> CheckForExistingRewardAsync(Guid businessId)
     {
-        var existingReward = await _repository.GetRewardByRewardOwnerIdAsync(rewardOwnerId);
+        var existingReward = await _repository.GetRewardByBusinessIdAsync(businessId);
         if (existingReward != null)
         {
             _logger.LogWarning(
-                "Reward already exists for RewardOwner. RewardOwnerId: {RewardOwnerId}, ExistingRewardId: {ExistingRewardId}",
-                rewardOwnerId, existingReward.Id);
+                "Reward already exists for Business. BusinessId: {BusinessId}, ExistingRewardId: {ExistingRewardId}",
+                businessId, existingReward.Id);
             return Result<bool>.Failure("A reward already exists for this reward owner. Only one reward per reward owner is currently allowed");
         }
 
@@ -175,7 +175,7 @@ public class RewardManagementService : IRewardManagementService
             var reward = new Reward
             {
                 Id = rewardId,
-                RewardOwnerId = request.RewardOwnerId,
+                BusinessId = request.BusinessId,
                 Name = request.Name,
                 RewardType = Enum.Parse<RewardType>(request.RewardType, ignoreCase: true),
                 CostPoints = request.CostPoints!.Value,
@@ -186,8 +186,8 @@ public class RewardManagementService : IRewardManagementService
             await _repository.CreateRewardAsync(reward);
 
             _logger.LogInformation(
-                "Reward entity created. RewardId: {RewardId}, RewardOwnerId: {RewardOwnerId}, Name: {Name}",
-                rewardId, reward.RewardOwnerId, reward.Name);
+                "Reward entity created. RewardId: {RewardId}, BusinessId: {BusinessId}, Name: {Name}",
+                rewardId, reward.BusinessId, reward.Name);
 
             // Save changes
             await _repository.SaveChangesAsync();
@@ -201,40 +201,40 @@ public class RewardManagementService : IRewardManagementService
         catch (Exception ex)
         {
             _logger.LogError(ex,
-                "Failed to create reward. RewardOwnerId: {RewardOwnerId}, Name: {Name}, Error: {Error}",
-                request.RewardOwnerId, request.Name, ex.Message);
+                "Failed to create reward. BusinessId: {BusinessId}, Name: {Name}, Error: {Error}",
+                request.BusinessId, request.Name, ex.Message);
             return Result<Reward>.Failure(
                 "An error occurred while creating the reward");
         }
     }
 
-    public async Task<Result<IEnumerable<RewardDto>>> GetRewardsByRewardOwnerIdAsync(Guid rewardOwnerId, Guid rewardOwnerUserId)
+    public async Task<Result<IEnumerable<RewardDto>>> GetRewardsByBusinessIdAsync(Guid businessId, Guid businessUserId)
     {
         // 1. Validate input
-        if (rewardOwnerId == Guid.Empty)
+        if (businessId == Guid.Empty)
         {
-            _logger.LogWarning("GetRewardsByRewardOwnerId called with empty RewardOwnerId");
-            return Result<IEnumerable<RewardDto>>.Failure("Reward owner ID is required");
+            _logger.LogWarning("GetRewardsByBusinessId called with empty BusinessId");
+            return Result<IEnumerable<RewardDto>>.Failure("Business ID is required");
         }
 
-        // 2. Verify RewardOwner exists
-        var rewardOwnerCheck = await VerifyRewardOwnerExistsAsync(rewardOwnerId);
+        // 2. Verify Business exists
+        var rewardOwnerCheck = await VerifyBusinessExistsAsync(businessId);
         if (rewardOwnerCheck.IsFailure)
             return Result<IEnumerable<RewardDto>>.Failure(rewardOwnerCheck.Error!);
 
-        // 3. Verify RewardOwnerUser belongs to RewardOwner
-        var userAuthCheck = await VerifyUserBelongsToRewardOwnerAsync(rewardOwnerUserId, rewardOwnerId);
+        // 3. Verify BusinessUser belongs to Business
+        var userAuthCheck = await VerifyUserBelongsToBusinessAsync(businessUserId, businessId);
         if (userAuthCheck.IsFailure)
             return Result<IEnumerable<RewardDto>>.Failure(userAuthCheck.Error!);
 
-        // 4. Get reward for this RewardOwner
-        var reward = await _repository.GetRewardByRewardOwnerIdAsync(rewardOwnerId);
+        // 4. Get reward for this Business
+        var reward = await _repository.GetRewardByBusinessIdAsync(businessId);
 
         if (reward == null)
         {
             _logger.LogInformation(
-                "No rewards found for RewardOwnerId: {RewardOwnerId}, RequestedBy: {UserId}",
-                rewardOwnerId, rewardOwnerUserId);
+                "No rewards found for BusinessId: {BusinessId}, RequestedBy: {BusinessUserId}",
+                businessId, businessUserId);
             // Return empty list if no reward exists
             return Result<IEnumerable<RewardDto>>.Success(new List<RewardDto>());
         }
@@ -243,8 +243,8 @@ public class RewardManagementService : IRewardManagementService
         var rewardDto = _mapper.Map<RewardDto>(reward);
 
         _logger.LogInformation(
-            "Reward found for RewardOwnerId: {RewardOwnerId}, RewardId: {RewardId}, Name: {Name}, RequestedBy: {UserId}",
-            rewardOwnerId, reward.Id, reward.Name, rewardOwnerUserId);
+            "Reward found for BusinessId: {BusinessId}, RewardId: {RewardId}, Name: {Name}, RequestedBy: {BusinessUserId}",
+            businessId, reward.Id, reward.Name, businessUserId);
 
         return Result<IEnumerable<RewardDto>>.Success(new List<RewardDto> { rewardDto });
     }

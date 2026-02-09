@@ -7,11 +7,11 @@ public class ScanEvent
 {
     public Guid Id { get; set; }
 
-    public Guid UserId { get; set; }
+    public Guid CustomerId { get; set; }
 
     public Guid RewardId { get; set; }
 
-    public Guid? RewardOwnerUserId { get; set; }
+    public Guid? BusinessUserId { get; set; }
 
     public string QrCodeValue { get; set; } = null!;
 
@@ -19,9 +19,9 @@ public class ScanEvent
 
     public int PointsChange { get; set; }
 
-    public virtual RewardOwnerUser? RewardOwnerUser { get; set; }
+    public virtual BusinessUser? BusinessUser { get; set; }
 
     public virtual Reward Reward { get; set; } = null!;
 
-    public virtual User User { get; set; } = null!;
+    public virtual Customer Customer { get; set; } = null!;
 }

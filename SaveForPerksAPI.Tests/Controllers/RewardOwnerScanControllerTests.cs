@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
 using SaveForPerksAPI.Common;
-using SaveForPerksAPI.Controllers.RewardOwner;
+using SaveForPerksAPI.Controllers.Business;
 using SaveForPerksAPI.Models;
 using SaveForPerksAPI.Services;
 using Xunit;
@@ -18,14 +18,14 @@ namespace SaveForPerksAPI.Tests.Controllers;
 public class RewardOwnerScanControllerTests
 {
     private readonly Mock<IRewardTransactionService> _mockRewardService;
-    private readonly Mock<ILogger<RewardOwnerScanController>> _mockLogger;
-    private readonly RewardOwnerScanController _controller;
+    private readonly Mock<ILogger<BusinessScanController>> _mockLogger;
+    private readonly BusinessScanController _controller;
 
     public RewardOwnerScanControllerTests()
     {
         _mockRewardService = new Mock<IRewardTransactionService>();
-        _mockLogger = new Mock<ILogger<RewardOwnerScanController>>();
-        _controller = new RewardOwnerScanController(_mockRewardService.Object, _mockLogger.Object);
+        _mockLogger = new Mock<ILogger<BusinessScanController>>();
+        _controller = new BusinessScanController(_mockRewardService.Object, _mockLogger.Object);
     }
 
     #region GetScanEventForReward Tests
@@ -86,26 +86,26 @@ public class RewardOwnerScanControllerTests
         // Arrange
         var rewardId = Guid.NewGuid();
         var qrCodeValue = "QR001-TEST";
-        var expectedResponse = new UserBalanceAndInfoResponseDto
+        var expectedResponse = new CustomerBalanceAndInfoResponseDto
         {
             QrCodeValue = qrCodeValue,
-            UserName = "Test User",
+            CustomerName = "Test Customer",
             CurrentBalance = 5,
             NumRewardsAvailable = 1
         };
         
         _mockRewardService
-            .Setup(s => s.GetUserBalanceForRewardAsync(rewardId, qrCodeValue))
-            .ReturnsAsync(Result<UserBalanceAndInfoResponseDto>.Success(expectedResponse));
+            .Setup(s => s.GetCustomerBalanceForRewardAsync(rewardId, qrCodeValue))
+            .ReturnsAsync(Result<CustomerBalanceAndInfoResponseDto>.Success(expectedResponse));
 
         // Act
-        var result = await _controller.GetUserBalanceForReward(rewardId, qrCodeValue);
+        var result = await _controller.GetCustomerBalanceForReward(rewardId, qrCodeValue);
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var returnedResponse = okResult.Value.Should().BeOfType<UserBalanceAndInfoResponseDto>().Subject;
+        var returnedResponse = okResult.Value.Should().BeOfType<CustomerBalanceAndInfoResponseDto>().Subject;
         returnedResponse.CurrentBalance.Should().Be(5);
-        returnedResponse.UserName.Should().Be("Test User");
+        returnedResponse.CustomerName.Should().Be("Test Customer");
     }
 
     [Fact]
@@ -116,15 +116,15 @@ public class RewardOwnerScanControllerTests
         var qrCodeValue = "INVALID-QR";
         
         _mockRewardService
-            .Setup(s => s.GetUserBalanceForRewardAsync(rewardId, qrCodeValue))
-            .ReturnsAsync(Result<UserBalanceAndInfoResponseDto>.Failure("User not found"));
+            .Setup(s => s.GetCustomerBalanceForRewardAsync(rewardId, qrCodeValue))
+            .ReturnsAsync(Result<CustomerBalanceAndInfoResponseDto>.Failure("Customer not found"));
 
         // Act
-        var result = await _controller.GetUserBalanceForReward(rewardId, qrCodeValue);
+        var result = await _controller.GetCustomerBalanceForReward(rewardId, qrCodeValue);
 
         // Assert
         var notFoundResult = result.Result.Should().BeOfType<NotFoundObjectResult>().Subject;
-        notFoundResult.Value.Should().Be("User not found");
+        notFoundResult.Value.Should().Be("Customer not found");
     }
 
     #endregion
@@ -151,7 +151,7 @@ public class RewardOwnerScanControllerTests
                 Id = scanEventId, 
                 RewardId = request.RewardId 
             },
-            UserName = "Test User",
+            CustomerName = "Test Customer",
             CurrentBalance = 5,
             RewardAvailable = true,
             NumRewardsAvailable = 1
@@ -172,7 +172,7 @@ public class RewardOwnerScanControllerTests
         
         var returnedResponse = createdResult.Value.Should().BeOfType<ScanEventResponseDto>().Subject;
         returnedResponse.CurrentBalance.Should().Be(5);
-        returnedResponse.UserName.Should().Be("Test User");
+        returnedResponse.CustomerName.Should().Be("Test Customer");
     }
 
     [Fact]
@@ -194,7 +194,7 @@ public class RewardOwnerScanControllerTests
                 Id = Guid.NewGuid(), 
                 RewardId = request.RewardId 
             },
-            UserName = "Test User",
+            CustomerName = "Test Customer",
             CurrentBalance = 2,
             ClaimedRewards = new ClaimedRewardsDto
             {
@@ -237,14 +237,14 @@ public class RewardOwnerScanControllerTests
         
         _mockRewardService
             .Setup(s => s.ProcessScanAndRewardsAsync(request))
-            .ReturnsAsync(Result<ScanEventResponseDto>.Failure("User not found"));
+            .ReturnsAsync(Result<ScanEventResponseDto>.Failure("Customer not found"));
 
         // Act
         var result = await _controller.CreatePointsAndClaimRewards(request);
 
         // Assert
         var badRequestResult = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
-        badRequestResult.Value.Should().Be("User not found");
+        badRequestResult.Value.Should().Be("Customer not found");
     }
 
     [Fact]
@@ -280,7 +280,7 @@ public class RewardOwnerScanControllerTests
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() => 
-            new RewardOwnerScanController(null!, _mockLogger.Object));
+            new BusinessScanController(null!, _mockLogger.Object));
         
         exception.ParamName.Should().Be("rewardTransactionService");
     }
@@ -290,7 +290,7 @@ public class RewardOwnerScanControllerTests
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() => 
-            new RewardOwnerScanController(_mockRewardService.Object, null!));
+            new BusinessScanController(_mockRewardService.Object, null!));
         
         exception.ParamName.Should().Be("logger");
     }

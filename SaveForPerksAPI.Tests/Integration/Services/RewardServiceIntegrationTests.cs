@@ -53,7 +53,7 @@ public class RewardServiceIntegrationTests : IDisposable
         // This test proves the Repository is using the in-memory context
         
         // Create a user in the in-memory context directly
-        var testUser = new User
+        var testUser = new Customer
         {
             Id = Guid.NewGuid(),
             Name = "DirectContextUser",
@@ -62,11 +62,11 @@ public class RewardServiceIntegrationTests : IDisposable
             AuthProviderId = "auth-123",
             CreatedAt = DateTime.UtcNow
         };
-        _fixture.Context.User.Add(testUser);
+        _fixture.Context.Customer.Add(testUser);
         await _fixture.Context.SaveChangesAsync();
         
         // Now query via Repository - should find the same user
-        var foundUser = await _fixture.Repository.GetUserByQrCodeValueAsync("QR-DIRECT-TEST");
+        var foundUser = await _fixture.Repository.GetCustomerByQrCodeValueAsync("QR-DIRECT-TEST");
         
         foundUser.Should().NotBeNull("because the repository should use the same in-memory context");
         foundUser!.Name.Should().Be("DirectContextUser", 
@@ -98,18 +98,18 @@ public class RewardServiceIntegrationTests : IDisposable
         // Assert - Verify response
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
-        result.Value!.UserName.Should().Be(user.Name);
+        result.Value!.CustomerName.Should().Be(user.Name);
         result.Value.CurrentBalance.Should().Be(1);
         result.Value.RewardAvailable.Should().BeFalse(); // Not enough points yet
 
         // Assert - Verify database state
-        var balance = await _fixture.Context.UserBalances
-            .FirstOrDefaultAsync(ub => ub.UserId == user.Id && ub.RewardId == reward.Id);
+        var balance = await _fixture.Context.CustomerBalances
+            .FirstOrDefaultAsync(ub => ub.CustomerId == user.Id && ub.RewardId == reward.Id);
         balance.Should().NotBeNull();
         balance!.Balance.Should().Be(1);
 
         var scanEvent = await _fixture.Context.ScanEvents
-            .FirstOrDefaultAsync(se => se.UserId == user.Id && se.RewardId == reward.Id);
+            .FirstOrDefaultAsync(se => se.CustomerId == user.Id && se.RewardId == reward.Id);
         scanEvent.Should().NotBeNull();
         scanEvent!.PointsChange.Should().Be(1);
         scanEvent.QrCodeValue.Should().Be(user.QrCodeValue);
@@ -118,7 +118,7 @@ public class RewardServiceIntegrationTests : IDisposable
     [Fact]
     public async Task ProcessScan_ExistingUser_UpdatesBalance()
     {
-        // Arrange - User already has 4 points (use unique QR to avoid collision with real DB)
+        // Arrange - Customer already has 4 points (use unique QR to avoid collision with real DB)
         var uniqueQr = $"TEST-EXISTING-{Guid.NewGuid()}";
         var user = await _testData.CreateUser("ExistingUser", uniqueQr);
         var reward = await _testData.CreateReward("Free Coffee", costPoints: 5);
@@ -142,8 +142,8 @@ public class RewardServiceIntegrationTests : IDisposable
         result.Value.NumRewardsAvailable.Should().Be(1);
 
         // Verify database
-        var balance = await _fixture.Context.UserBalances
-            .FirstAsync(ub => ub.UserId == user.Id && ub.RewardId == reward.Id);
+        var balance = await _fixture.Context.CustomerBalances
+            .FirstAsync(ub => ub.CustomerId == user.Id && ub.RewardId == reward.Id);
         balance.Balance.Should().Be(5);
     }
 
@@ -155,7 +155,7 @@ public class RewardServiceIntegrationTests : IDisposable
     [Fact]
     public async Task Toby_ProcessScan_BalanceWithPointsMatchesReward_ClaimNoReward_AddsPoints()
     {
-        // Arrange - User has 3 points, claims 2 points which now matches reward (costs 5 points) but cannot claim yet 
+        // Arrange - Customer has 3 points, claims 2 points which now matches reward (costs 5 points) but cannot claim yet 
         // Use unique QR code to avoid collision with real database
         var uniqueQr = $"TEST-CLAIM-{Guid.NewGuid()}";
         var user = await _testData.CreateUser("TobyUser", uniqueQr);
@@ -184,13 +184,13 @@ public class RewardServiceIntegrationTests : IDisposable
         result.Value.ClaimedRewards.RedemptionIds.Should().HaveCount(1);
         */
         // Assert - Database: Balance updated
-        var updatedBalance = await _fixture.Context.UserBalances
-            .FirstAsync(ub => ub.UserId == user.Id && ub.RewardId == reward.Id);
+        var updatedBalance = await _fixture.Context.CustomerBalances
+            .FirstAsync(ub => ub.CustomerId == user.Id && ub.RewardId == reward.Id);
         updatedBalance.Balance.Should().Be(5);
 
         // Assert - Database: Redemption created
         var redemptions = await _fixture.Context.RewardRedemptions
-            .Where(r => r.UserId == user.Id && r.RewardId == reward.Id)
+            .Where(r => r.CustomerId == user.Id && r.RewardId == reward.Id)
             .ToListAsync();
         redemptions.Should().HaveCount(0);
 
@@ -199,7 +199,7 @@ public class RewardServiceIntegrationTests : IDisposable
     [Fact]
     public async Task ProcessScan_ClaimOneReward_DeductsPointsAndCreatesRedemption()
     {
-        // Arrange - User has 10 points, wants to claim 1 reward (costs 5 points)
+        // Arrange - Customer has 10 points, wants to claim 1 reward (costs 5 points)
         // Use unique QR code to avoid collision with real database
         var uniqueQr = $"TEST-CLAIM-{Guid.NewGuid()}";
         var user = await _testData.CreateUser("ClaimUser", uniqueQr);
@@ -227,13 +227,13 @@ public class RewardServiceIntegrationTests : IDisposable
         result.Value.ClaimedRewards.RedemptionIds.Should().HaveCount(1);
 
         // Assert - Database: Balance updated
-        var updatedBalance = await _fixture.Context.UserBalances
-            .FirstAsync(ub => ub.UserId == user.Id && ub.RewardId == reward.Id);
+        var updatedBalance = await _fixture.Context.CustomerBalances
+            .FirstAsync(ub => ub.CustomerId == user.Id && ub.RewardId == reward.Id);
         updatedBalance.Balance.Should().Be(6);
 
         // Assert - Database: Redemption created
         var redemptions = await _fixture.Context.RewardRedemptions
-            .Where(r => r.UserId == user.Id && r.RewardId == reward.Id)
+            .Where(r => r.CustomerId == user.Id && r.RewardId == reward.Id)
             .ToListAsync();
         redemptions.Should().HaveCount(1);
         redemptions[0].RedeemedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
@@ -242,7 +242,7 @@ public class RewardServiceIntegrationTests : IDisposable
     [Fact]
     public async Task ProcessScan_ClaimMultipleRewards_DeductsCorrectPointsAndCreatesMultipleRedemptions()
     {
-        // Arrange - User has 12 points, wants to claim 2 rewards (costs 5 points each)
+        // Arrange - Customer has 12 points, wants to claim 2 rewards (costs 5 points each)
         // Use unique QR code to avoid collision with real database
         var uniqueQr = $"TEST-MULTI-{Guid.NewGuid()}";
         var user = await _testData.CreateUser("MultiClaimUser", uniqueQr);
@@ -269,7 +269,7 @@ public class RewardServiceIntegrationTests : IDisposable
 
         // Verify 2 redemptions created
         var redemptions = await _fixture.Context.RewardRedemptions
-            .Where(r => r.UserId == user.Id && r.RewardId == reward.Id)
+            .Where(r => r.CustomerId == user.Id && r.RewardId == reward.Id)
             .ToListAsync();
         redemptions.Should().HaveCount(2);
     }
@@ -277,7 +277,7 @@ public class RewardServiceIntegrationTests : IDisposable
     [Fact]
     public async Task ProcessScan_InsufficientPoints_ReturnsFailureAndDoesNotModifyDatabase()
     {
-        // Arrange - User only has 3 points, but reward costs 5
+        // Arrange - Customer only has 3 points, but reward costs 5
         var (user, reward, balance) = await _testData.CreateUserWithInsufficientPoints(
             currentPoints: 3,
             rewardCost: 5);
@@ -300,19 +300,19 @@ public class RewardServiceIntegrationTests : IDisposable
         result.Error.Should().Contain("3"); // Available
 
         // Assert - Database unchanged (transaction rolled back)
-        var unchangedBalance = await _fixture.Context.UserBalances
-            .FirstAsync(ub => ub.UserId == user.Id && ub.RewardId == reward.Id);
+        var unchangedBalance = await _fixture.Context.CustomerBalances
+            .FirstAsync(ub => ub.CustomerId == user.Id && ub.RewardId == reward.Id);
         unchangedBalance.Balance.Should().Be(3); // Still 3, not updated
 
         // No scan event created
         var scanEvents = await _fixture.Context.ScanEvents
-            .Where(se => se.UserId == user.Id && se.RewardId == reward.Id)
+            .Where(se => se.CustomerId == user.Id && se.RewardId == reward.Id)
             .ToListAsync();
         scanEvents.Should().BeEmpty();
 
         // No redemptions created
         var redemptions = await _fixture.Context.RewardRedemptions
-            .Where(r => r.UserId == user.Id && r.RewardId == reward.Id)
+            .Where(r => r.CustomerId == user.Id && r.RewardId == reward.Id)
             .ToListAsync();
         redemptions.Should().BeEmpty();
     }
@@ -368,7 +368,7 @@ public class RewardServiceIntegrationTests : IDisposable
     [Fact]
     public async Task ProcessScan_ClaimRewardWithoutBalance_ReturnsFailure()
     {
-        // Arrange - User exists but has never scanned (no balance record)
+        // Arrange - Customer exists but has never scanned (no balance record)
         var user = await _testData.CreateUser();
         var reward = await _testData.CreateReward();
         // No balance created!
@@ -402,18 +402,18 @@ public class RewardServiceIntegrationTests : IDisposable
         var reward = await _testData.CreateReward("Free Coffee", costPoints: 5);
         var balance = await _testData.CreateUserBalance(user, reward, balance: 12);
 
-        // VERIFY: User was created in in-memory database with correct name
-        var verifyUser = await _fixture.Context.User.FirstAsync(u => u.Id == user.Id);
+        // VERIFY: Customer was created in in-memory database with correct name
+        var verifyUser = await _fixture.Context.Customer.FirstAsync(u => u.Id == user.Id);
         verifyUser.Name.Should().Be("TestOnlyUser", "because we created a user in the test data");
 
         // Act
-        var result = await _fixture.Service.GetUserBalanceForRewardAsync(
+        var result = await _fixture.Service.GetCustomerBalanceForRewardAsync(
             reward.Id,
             uniqueQr);
 
         // Assert
         result.IsSuccess.Should().BeTrue("because the user exists in our in-memory test database");
-        result.Value!.UserName.Should().Be("TestOnlyUser", 
+        result.Value!.CustomerName.Should().Be("TestOnlyUser", 
             "because the user was created with name 'TestOnlyUser' in our in-memory test data");
         result.Value.QrCodeValue.Should().Be(uniqueQr);
         result.Value.CurrentBalance.Should().Be(12);
@@ -426,11 +426,11 @@ public class RewardServiceIntegrationTests : IDisposable
     [Fact]
     public async Task GetUserBalance_NoBalance_ReturnsZeroPoints()
     {
-        // Arrange - User exists but no scans yet
+        // Arrange - Customer exists but no scans yet
         var (user, reward) = await _testData.CreateNewUserScenario();
 
         // Act
-        var result = await _fixture.Service.GetUserBalanceForRewardAsync(
+        var result = await _fixture.Service.GetCustomerBalanceForRewardAsync(
             reward.Id,
             user.QrCodeValue);
 
@@ -448,7 +448,7 @@ public class RewardServiceIntegrationTests : IDisposable
         var reward = await _testData.CreateReward();
 
         // Act
-        var result = await _fixture.Service.GetUserBalanceForRewardAsync(
+        var result = await _fixture.Service.GetCustomerBalanceForRewardAsync(
             reward.Id,
             "INVALID-QR");
 
@@ -545,17 +545,17 @@ public class RewardServiceIntegrationTests : IDisposable
 
         // Verify database state
         var scanEvents = await _fixture.Context.ScanEvents
-            .Where(se => se.UserId == user.Id)
+            .Where(se => se.CustomerId == user.Id)
             .ToListAsync();
         scanEvents.Should().HaveCount(6);
 
         var redemptions = await _fixture.Context.RewardRedemptions
-            .Where(r => r.UserId == user.Id)
+            .Where(r => r.CustomerId == user.Id)
             .ToListAsync();
         redemptions.Should().HaveCount(1);
 
-        var finalBalance = await _fixture.Context.UserBalances
-            .FirstAsync(ub => ub.UserId == user.Id);
+        var finalBalance = await _fixture.Context.CustomerBalances
+            .FirstAsync(ub => ub.CustomerId == user.Id);
         finalBalance.Balance.Should().Be(1);
     }
 
@@ -590,12 +590,12 @@ public class RewardServiceIntegrationTests : IDisposable
         }
 
         // Assert - Check balances are independent
-        var aliceBalance = await _fixture.Context.UserBalances
-            .FirstAsync(ub => ub.UserId == alice.Id);
+        var aliceBalance = await _fixture.Context.CustomerBalances
+            .FirstAsync(ub => ub.CustomerId == alice.Id);
         aliceBalance.Balance.Should().Be(10);
 
-        var bobBalance = await _fixture.Context.UserBalances
-            .FirstAsync(ub => ub.UserId == bob.Id);
+        var bobBalance = await _fixture.Context.CustomerBalances
+            .FirstAsync(ub => ub.CustomerId == bob.Id);
         bobBalance.Balance.Should().Be(3);
 
         // Alice can claim, Bob cannot

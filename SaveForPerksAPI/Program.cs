@@ -104,6 +104,7 @@ builder.Services.AddScoped<IRewardTransactionService, RewardTransactionService>(
 builder.Services.AddScoped<IRewardManagementService, RewardManagementService>();
 builder.Services.AddScoped<IBusinessUserService, BusinessUserService>();
 builder.Services.AddScoped<IBusinessCategoryService, BusinessCategoryService>();
+builder.Services.AddScoped<IBusinessService, BusinessService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 
 builder.Services.AddControllers();

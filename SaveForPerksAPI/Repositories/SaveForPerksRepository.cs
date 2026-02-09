@@ -22,7 +22,10 @@ namespace SaveForPerksAPI.Repositories
 
         public async Task<IEnumerable<Business>> GetBusinessesAsync()
         {
-            return await _context.Businesses.OrderBy(lo => lo.Name).ToListAsync();
+            return await _context.Businesses
+                .Include(b => b.Category)
+                .OrderBy(b => b.Name)
+                .ToListAsync();
         }
   
 
@@ -160,7 +163,8 @@ namespace SaveForPerksAPI.Repositories
         public async Task<Business?> GetBusinessByIdAsync(Guid businessId)
         {
             return await _context.Businesses
-                .Where(ro => ro.Id == businessId)
+                .Include(b => b.Category)
+                .Where(b => b.Id == businessId)
                 .FirstOrDefaultAsync();
         }
 
@@ -185,6 +189,13 @@ namespace SaveForPerksAPI.Repositories
             return await _context.BusinessCategories
                 .OrderBy(c => c.Name)
                 .ToListAsync();
+        }
+
+        public async Task<BusinessCategory?> GetBusinessCategoryByIdAsync(Guid categoryId)
+        {
+            return await _context.BusinessCategories
+                .Where(c => c.Id == categoryId)
+                .FirstOrDefaultAsync();
         }
     }
 }

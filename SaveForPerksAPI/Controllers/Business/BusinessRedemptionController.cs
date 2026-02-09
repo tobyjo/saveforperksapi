@@ -20,6 +20,8 @@ namespace SaveForPerksAPI.Controllers.Business
             this.mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
+    /** Might need GET to get rewards but I think rewards are now redeemed in BusinessScanCOntroller
+
         [HttpGet("{rewardId}/{rewardRedemptionId}", Name = "GetRewardRedemption")]
         public async Task<ActionResult<RewardRedemptionDto>> GetRewardRedemption(Guid rewardId, Guid rewardRedemptionId)
         {
@@ -88,5 +90,6 @@ namespace SaveForPerksAPI.Controllers.Business
                 rewardRedemptionResponse);
 
         }
+    */
     }
 }

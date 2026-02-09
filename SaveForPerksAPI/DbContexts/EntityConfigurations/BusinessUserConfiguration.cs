@@ -13,6 +13,9 @@ public class BusinessUserConfiguration : IEntityTypeConfiguration<BusinessUser>
         builder.ToTable("business_user");
 
         builder.HasIndex(e => e.BusinessId);
+
+        builder.HasIndex(e => e.AuthProviderId).IsUnique();
+
         builder.Property(e => e.Id)
             .HasDefaultValueSql("(newid())")
             .HasColumnName("id");

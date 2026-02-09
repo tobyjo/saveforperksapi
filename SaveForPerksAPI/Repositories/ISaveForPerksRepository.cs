@@ -51,5 +51,7 @@ namespace SaveForPerksAPI.Repositories
 
         Task<IEnumerable<BusinessCategory>> GetAllBusinessCategoriesAsync();
 
+        Task<BusinessCategory?> GetBusinessCategoryByIdAsync(Guid categoryId);
+
     }
 }

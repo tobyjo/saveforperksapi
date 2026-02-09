@@ -12,6 +12,7 @@ public class ScanEventProfile : Profile
         // From DTO to database
         CreateMap<Models.ScanEventForCreationDto, Entities.ScanEvent>()
             .ForMember(dest => dest.BusinessUser, opt => opt.Ignore())
+            .ForMember(dest => dest.BusinessUserId, opt => opt.Ignore()) // Set manually in service
             .ForMember(dest => dest.Reward, opt => opt.Ignore())
             .ForMember(dest => dest.Customer, opt => opt.Ignore())
             .ForMember(dest => dest.Id, opt => opt.Ignore())

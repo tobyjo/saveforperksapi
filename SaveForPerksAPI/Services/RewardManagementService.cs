@@ -126,7 +126,7 @@ public class RewardManagementService : IRewardManagementService
         if (businessUserId == Guid.Empty)
         {
             _logger.LogWarning("BusinessUserId is empty");
-            return Result<bool>.Failure("Business Customer ID is required");
+            return Result<bool>.Failure("Business User ID is required");
         }
 
         var rewardOwnerUser = await _repository.GetBusinessUserByIdAsync(businessUserId);

@@ -187,6 +187,9 @@ namespace SaveForPerksAPI.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AuthProviderId")
+                        .IsUnique();
+
                     b.HasIndex("BusinessId");
 
                     b.ToTable("business_user", (string)null);

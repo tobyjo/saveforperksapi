@@ -23,176 +23,91 @@ public class RewardTransactionService : IRewardTransactionService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<Result<BusinessWithAdminUserResponseDto>> CreateBusinessAsync(
-        BusinessWithAdminUserForCreationDto request)
-    {
-        // 1. Validate request
-        var validationResult = ValidateCreateBusinessRequest(request);
-        if (validationResult.IsFailure)
-            return Result<BusinessWithAdminUserResponseDto>.Failure(validationResult.Error!);
-
-        // 2. Check for duplicate email
-        var duplicateCheckResult = await CheckDuplicateEmailAsync(request.BusinessUserEmail);
-        if (duplicateCheckResult.IsFailure)
-            return Result<BusinessWithAdminUserResponseDto>.Failure(duplicateCheckResult.Error!);
-
-        // 3. Create entities in transaction
-        var createResult = await CreateBusinessAndUserAsync(request);
-        if (createResult.IsFailure)
-            return Result<BusinessWithAdminUserResponseDto>.Failure(createResult.Error!);
-
-        var (rewardOwner, rewardOwnerUser) = createResult.Value;
-
-        // 4. Build response
-        var response = BuildCreateRewardOwnerResponse(rewardOwner, rewardOwnerUser);
-
-        _logger.LogInformation(
-            "Reward owner and admin customer created successfully. RewardOwnerId: {RewardOwnerId}, BusinessUserId: {CustomerId}, Email: {Email}",
-            rewardOwner.Id, rewardOwnerUser.Id, rewardOwnerUser.Email);
-
-        return Result<BusinessWithAdminUserResponseDto>.Success(response);
-    }
-
-    private Result<bool> ValidateCreateBusinessRequest(BusinessWithAdminUserForCreationDto request)
-    {
-        if (string.IsNullOrWhiteSpace(request.BusinessName))
-        {
-            _logger.LogWarning("Validation failed: BusinessName is required");
-            return Result<bool>.Failure("Reward owner name is required");
-        }
-
-        if (string.IsNullOrWhiteSpace(request.BusinessUserAuthProviderId))
-        {
-            _logger.LogWarning("Validation failed: Auth provider ID is required");
-            return Result<bool>.Failure("Authentication provider ID is required");
-        }
-
-        if (string.IsNullOrWhiteSpace(request.BusinessUserEmail))
-        {
-            _logger.LogWarning("Validation failed: Email is required");
-            return Result<bool>.Failure("Email is required");
-        }
-
-        // Basic email validation
-        if (!request.BusinessUserEmail.Contains('@') || !request.BusinessUserEmail.Contains('.'))
-        {
-            _logger.LogWarning("Validation failed: Invalid email format. Email: {Email}", request.BusinessUserEmail);
-            return Result<bool>.Failure("Invalid email format");
-        }
-
-        if (string.IsNullOrWhiteSpace(request.BusinessUserName))
-        {
-            _logger.LogWarning("Validation failed: Customer name is required");
-            return Result<bool>.Failure("Customer name is required");
-        }
-
-        return Result<bool>.Success(true);
-    }
-
-    private async Task<Result<bool>> CheckDuplicateEmailAsync(string email)
-    {
-        var existingUser = await _repository.GetBusinessUserByEmailAsync(email);
-        if (existingUser != null)
-        {
-            _logger.LogWarning(
-                "Duplicate email detected during reward owner creation. Email: {Email}", 
-                email);
-            return Result<bool>.Failure("A customer with this email already exists");
-        }
-
-        return Result<bool>.Success(true);
-    }
-
-    private async Task<Result<(Business rewardOwner, BusinessUser rewardOwnerUser)>> 
-        CreateBusinessAndUserAsync(BusinessWithAdminUserForCreationDto request)
-    {
-        try
-        {
-            // Create Business
-            var businessId = Guid.NewGuid();
-            var business = new Business
-            {
-                Id = businessId,
-                Name = request.BusinessName,
-                Description = request.BusinessDescription,
-                Address = null, // Can be added later if needed
-                CreatedAt = DateTime.UtcNow
-            };
-            await _repository.CreateBusinessAsync(business);
-
-            _logger.LogInformation(
-                "Business entity created. BusinessId: {BusinessId}, Name: {Name}",
-                businessId, business.Name);
-
-            // Create BusinessUser (admin)
-            var businessUserId = Guid.NewGuid();
-            var businessUser = new BusinessUser
-            {
-                Id = businessUserId,
-                BusinessId = businessId,
-                AuthProviderId = request.BusinessUserAuthProviderId,
-                Email = request.BusinessUserEmail,
-                Name = request.BusinessUserName,
-                IsAdmin = true, // Always admin for this creation flow
-                CreatedAt = DateTime.UtcNow
-            };
-            await _repository.CreateBusinessUserAsync(businessUser);
-
-            _logger.LogInformation(
-                "BusinessUser entity created. BusinessUserId: {BusinessUserId}, Email: {Email}, IsAdmin: true, BusinessId: {BusinessId}",
-                businessUserId, businessUser.Email, businessId);
-
-            // Save changes (atomic transaction)
-            await _repository.SaveChangesAsync();
-
-            _logger.LogInformation(
-                "Transaction committed successfully. BusinessId: {BusinessId}, BusinessUserId: {BusinessUserId}",
-                businessId, businessUserId);
-
-            return Result<(Business, BusinessUser)>.Success((business, businessUser));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex,
-                "Failed to create business and admin customer. BusinessName: {Name}, Email: {Email}, Error: {Error}",
-                request.BusinessName, request.BusinessUserEmail, ex.Message);
-            return Result<(Business, BusinessUser)>.Failure(
-                "An error occurred while creating the business account");
-        }
-    }
-
-    private BusinessWithAdminUserResponseDto BuildCreateRewardOwnerResponse(
-        Business business,
-        BusinessUser businessUser)
-    {
-        return new BusinessWithAdminUserResponseDto
-        {
-            Business = _mapper.Map<BusinessDto>(business),
-            BusinessUser = _mapper.Map<BusinessUserDto>(businessUser)
-        };
-    }
-
     public async Task<Result<ScanEventResponseDto>> ProcessScanAndRewardsAsync(
+        Guid businessId,
+        Guid businessUserId,
         ScanEventForCreationDto request)
     {
-        // 1. Validate request
+        // 1. Validate BusinessUser belongs to Business
+        var authCheck = await ValidateBusinessUserAuthorizationAsync(businessId, businessUserId);
+        if (authCheck.IsFailure)
+            return Result<ScanEventResponseDto>.Failure(authCheck.Error!);
+
+        // 2. Validate Reward belongs to Business
+        var rewardCheck = await ValidateRewardBelongsToBusinessAsync(businessId, request.RewardId);
+        if (rewardCheck.IsFailure)
+            return Result<ScanEventResponseDto>.Failure(rewardCheck.Error!);
+
+        // 3. Validate request
         var validationResult = await ValidateRequestAsync(request);
         if (validationResult.IsFailure)
             return Result<ScanEventResponseDto>.Failure(validationResult.Error!);
 
-        var (user, reward, existingBalance) = validationResult.Value;
+        var (customer, reward, existingBalance) = validationResult.Value;
 
-        // 2. Process transaction
-        var processResult = await ProcessTransactionAsync(user, reward, existingBalance, request);
+        // 4. Process transaction
+        var processResult = await ProcessTransactionAsync(customer, reward, existingBalance, businessUserId, request);
         if (processResult.IsFailure)
             return Result<ScanEventResponseDto>.Failure(processResult.Error!);
 
         var (updatedBalance, scanEvent, redemptionIds) = processResult.Value;
 
-        // 3. Build response
-        var response = BuildResponse(user, reward, updatedBalance, scanEvent, request.NumRewardsToClaim, redemptionIds);
+        // 5. Build response
+        var response = BuildResponse(customer, reward, updatedBalance, scanEvent, request.NumRewardsToClaim, redemptionIds);
 
         return Result<ScanEventResponseDto>.Success(response);
+    }
+
+    private async Task<Result<bool>> ValidateBusinessUserAuthorizationAsync(Guid businessId, Guid businessUserId)
+    {
+        var businessUser = await _repository.GetBusinessUserByIdAsync(businessUserId);
+        if (businessUser == null)
+        {
+            _logger.LogWarning(
+                "Authorization failed: BusinessUser not found. BusinessUserId: {BusinessUserId}",
+                businessUserId);
+            return Result<bool>.Failure("You are not authorized to perform this action");
+        }
+
+        if (businessUser.BusinessId != businessId)
+        {
+            _logger.LogWarning(
+                "Authorization failed: BusinessUser {BusinessUserId} does not belong to Business {BusinessId}. Actual BusinessId: {ActualBusinessId}",
+                businessUserId, businessId, businessUser.BusinessId);
+            return Result<bool>.Failure("You are not authorized to perform scans for this business");
+        }
+
+        _logger.LogInformation(
+            "Authorization successful: BusinessUser {BusinessUserId} belongs to Business {BusinessId}",
+            businessUserId, businessId);
+
+        return Result<bool>.Success(true);
+    }
+
+    private async Task<Result<bool>> ValidateRewardBelongsToBusinessAsync(Guid businessId, Guid rewardId)
+    {
+        var reward = await _repository.GetRewardAsync(rewardId);
+        if (reward == null)
+        {
+            _logger.LogWarning(
+                "Reward not found. RewardId: {RewardId}",
+                rewardId);
+            return Result<bool>.Failure("Invalid reward");
+        }
+
+        if (reward.BusinessId != businessId)
+        {
+            _logger.LogWarning(
+                "Authorization failed: Reward {RewardId} does not belong to Business {BusinessId}. Actual BusinessId: {ActualBusinessId}",
+                rewardId, businessId, reward.BusinessId);
+            return Result<bool>.Failure("This reward does not belong to your business");
+        }
+
+        _logger.LogInformation(
+            "Reward validation successful: Reward {RewardId} belongs to Business {BusinessId}",
+            rewardId, businessId);
+
+        return Result<bool>.Success(true);
     }
 
     private async Task<Result<(Customer customer, Reward reward, CustomerBalance? balance)>> 
@@ -265,6 +180,7 @@ public class RewardTransactionService : IRewardTransactionService
             Customer customer, 
             Reward reward, 
             CustomerBalance? existingBalance,
+            Guid businessUserId,
             ScanEventForCreationDto request)
     {
         try
@@ -283,7 +199,7 @@ public class RewardTransactionService : IRewardTransactionService
             }
 
             // 3. Create scan event
-            var scanEvent = await CreateScanEventAsync(customer, reward, request);
+            var scanEvent = await CreateScanEventAsync(customer, reward, businessUserId, request);
             _logger.LogInformation(
                 "Scan event created. ScanEventId: {ScanEventId}, Customer: {CustomerId}, Reward: {RewardId}, Points: +{Points}", 
                 scanEvent.Id, customer.Id, reward.Id, request.PointsChange);
@@ -354,7 +270,11 @@ public class RewardTransactionService : IRewardTransactionService
         return redemptionIds;
     }
 
-    private async Task<ScanEvent> CreateScanEventAsync(Customer customer, Reward reward, ScanEventForCreationDto request)
+    private async Task<ScanEvent> CreateScanEventAsync(
+        Customer customer, 
+        Reward reward, 
+        Guid businessUserId,
+        ScanEventForCreationDto request)
     {
         var scanEvent = new ScanEvent
         {
@@ -363,7 +283,7 @@ public class RewardTransactionService : IRewardTransactionService
             RewardId = reward.Id,
             QrCodeValue = request.QrCodeValue,
             PointsChange = request.PointsChange,
-            BusinessUserId = request.BusinessUserId,
+            BusinessUserId = businessUserId,
             ScannedAt = DateTime.UtcNow
         };
         await _repository.CreateScanEvent(scanEvent);
@@ -421,20 +341,26 @@ public class RewardTransactionService : IRewardTransactionService
     }
 
     public async Task<Result<CustomerBalanceAndInfoResponseDto>> GetCustomerBalanceForRewardAsync(
+        Guid businessId,
         Guid rewardId, 
         string qrCodeValue)
     {
-        // 1. Validate customer and reward exist
+        // 1. Validate Reward belongs to Business
+        var rewardCheck = await ValidateRewardBelongsToBusinessAsync(businessId, rewardId);
+        if (rewardCheck.IsFailure)
+            return Result<CustomerBalanceAndInfoResponseDto>.Failure(rewardCheck.Error!);
+
+        // 2. Validate customer and reward exist
         var validationResult = await ValidateUserAndRewardAsync(rewardId, qrCodeValue);
         if (validationResult.IsFailure)
             return Result<CustomerBalanceAndInfoResponseDto>.Failure(validationResult.Error!);
 
         var (customer, reward) = validationResult.Value;
 
-        // 2. Get customer balance
+        // 3. Get customer balance
         var balance = await _repository.GetCustomerBalanceForRewardAsync(customer.Id, rewardId);
 
-        // 3. Build response
+        // 4. Build response
         var response = BuildUserBalanceResponse(customer, reward, balance, qrCodeValue);
 
         return Result<CustomerBalanceAndInfoResponseDto>.Success(response);
@@ -505,11 +431,18 @@ public class RewardTransactionService : IRewardTransactionService
     }
 
     public async Task<Result<ScanEventDto>> GetScanEventForRewardAsync(
+        Guid businessId,
         Guid rewardId, 
         Guid scanEventId)
     {
+        // 1. Validate Reward belongs to Business
+        var rewardCheck = await ValidateRewardBelongsToBusinessAsync(businessId, rewardId);
+        if (rewardCheck.IsFailure)
+            return Result<ScanEventDto>.Failure(rewardCheck.Error!);
+
+        // 2. Get scan event
         var scanEvent = await _repository.GetScanEventAsync(rewardId, scanEventId);
-        
+
         if (scanEvent == null)
         {
             _logger.LogWarning(

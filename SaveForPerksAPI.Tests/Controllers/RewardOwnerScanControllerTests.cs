@@ -34,6 +34,7 @@ public class RewardOwnerScanControllerTests
     public async Task GetScanEventForReward_WhenEventExists_ReturnsOkWithDto()
     {
         // Arrange
+        var businessId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var rewardId = Guid.NewGuid();
         var scanEventId = Guid.NewGuid();
         var expectedDto = new ScanEventDto 
@@ -42,13 +43,13 @@ public class RewardOwnerScanControllerTests
             RewardId = rewardId,
             PointsChange = 1
         };
-        
+
         _mockRewardService
-            .Setup(s => s.GetScanEventForRewardAsync(rewardId, scanEventId))
+            .Setup(s => s.GetScanEventForRewardAsync(businessId, rewardId, scanEventId))
             .ReturnsAsync(Result<ScanEventDto>.Success(expectedDto));
 
         // Act
-        var result = await _controller.GetScanEventForReward(rewardId, scanEventId);
+        var result = await _controller.GetScanEventForReward(businessId, rewardId, scanEventId);
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
@@ -61,15 +62,16 @@ public class RewardOwnerScanControllerTests
     public async Task GetScanEventForReward_WhenEventNotFound_ReturnsNotFound()
     {
         // Arrange
+        var businessId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var rewardId = Guid.NewGuid();
         var scanEventId = Guid.NewGuid();
-        
+
         _mockRewardService
-            .Setup(s => s.GetScanEventForRewardAsync(rewardId, scanEventId))
+            .Setup(s => s.GetScanEventForRewardAsync(businessId, rewardId, scanEventId))
             .ReturnsAsync(Result<ScanEventDto>.Failure("Scan event not found"));
 
         // Act
-        var result = await _controller.GetScanEventForReward(rewardId, scanEventId);
+        var result = await _controller.GetScanEventForReward(businessId, rewardId, scanEventId);
 
         // Assert
         var notFoundResult = result.Result.Should().BeOfType<NotFoundObjectResult>().Subject;
@@ -84,6 +86,7 @@ public class RewardOwnerScanControllerTests
     public async Task GetUserBalanceForReward_WhenUserExists_ReturnsOkWithBalance()
     {
         // Arrange
+        var businessId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var rewardId = Guid.NewGuid();
         var qrCodeValue = "QR001-TEST";
         var expectedResponse = new CustomerBalanceAndInfoResponseDto
@@ -93,13 +96,13 @@ public class RewardOwnerScanControllerTests
             CurrentBalance = 5,
             NumRewardsAvailable = 1
         };
-        
+
         _mockRewardService
-            .Setup(s => s.GetCustomerBalanceForRewardAsync(rewardId, qrCodeValue))
+            .Setup(s => s.GetCustomerBalanceForRewardAsync(businessId, rewardId, qrCodeValue))
             .ReturnsAsync(Result<CustomerBalanceAndInfoResponseDto>.Success(expectedResponse));
 
         // Act
-        var result = await _controller.GetCustomerBalanceForReward(rewardId, qrCodeValue);
+        var result = await _controller.GetCustomerBalanceForReward(businessId, rewardId, qrCodeValue);
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
@@ -112,15 +115,16 @@ public class RewardOwnerScanControllerTests
     public async Task GetUserBalanceForReward_WhenUserNotFound_ReturnsNotFound()
     {
         // Arrange
+        var businessId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var rewardId = Guid.NewGuid();
         var qrCodeValue = "INVALID-QR";
-        
+
         _mockRewardService
-            .Setup(s => s.GetCustomerBalanceForRewardAsync(rewardId, qrCodeValue))
+            .Setup(s => s.GetCustomerBalanceForRewardAsync(businessId, rewardId, qrCodeValue))
             .ReturnsAsync(Result<CustomerBalanceAndInfoResponseDto>.Failure("Customer not found"));
 
         // Act
-        var result = await _controller.GetCustomerBalanceForReward(rewardId, qrCodeValue);
+        var result = await _controller.GetCustomerBalanceForReward(businessId, rewardId, qrCodeValue);
 
         // Assert
         var notFoundResult = result.Result.Should().BeOfType<NotFoundObjectResult>().Subject;
@@ -135,6 +139,8 @@ public class RewardOwnerScanControllerTests
     public async Task CreatePointsAndClaimRewards_WhenValid_ReturnsCreatedAtRoute()
     {
         // Arrange
+        var businessId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var businessUserId = Guid.Parse("a1111111-1111-1111-1111-111111111111");
         var request = new ScanEventForCreationDto
         {
             QrCodeValue = "QR001",
@@ -142,7 +148,7 @@ public class RewardOwnerScanControllerTests
             PointsChange = 1,
             NumRewardsToClaim = 0
         };
-        
+
         var scanEventId = Guid.NewGuid();
         var response = new ScanEventResponseDto
         {
@@ -156,13 +162,13 @@ public class RewardOwnerScanControllerTests
             RewardAvailable = true,
             NumRewardsAvailable = 1
         };
-        
+
         _mockRewardService
-            .Setup(s => s.ProcessScanAndRewardsAsync(request))
+            .Setup(s => s.ProcessScanAndRewardsAsync(businessId, businessUserId, request))
             .ReturnsAsync(Result<ScanEventResponseDto>.Success(response));
 
         // Act
-        var result = await _controller.CreatePointsAndClaimRewards(request);
+        var result = await _controller.CreatePointsAndClaimRewards(businessId, request, businessUserId);
 
         // Assert
         var createdResult = result.Result.Should().BeOfType<CreatedAtRouteResult>().Subject;
@@ -179,6 +185,8 @@ public class RewardOwnerScanControllerTests
     public async Task CreatePointsAndClaimRewards_WithRewardsClaimed_ReturnsSuccessWithClaimedInfo()
     {
         // Arrange
+        var businessId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var businessUserId = Guid.Parse("a1111111-1111-1111-1111-111111111111");
         var request = new ScanEventForCreationDto
         {
             QrCodeValue = "QR001",
@@ -186,7 +194,7 @@ public class RewardOwnerScanControllerTests
             PointsChange = 1,
             NumRewardsToClaim = 2
         };
-        
+
         var response = new ScanEventResponseDto
         {
             ScanEvent = new ScanEventDto 
@@ -204,13 +212,13 @@ public class RewardOwnerScanControllerTests
                 RedemptionIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() }
             }
         };
-        
+
         _mockRewardService
-            .Setup(s => s.ProcessScanAndRewardsAsync(request))
+            .Setup(s => s.ProcessScanAndRewardsAsync(businessId, businessUserId, request))
             .ReturnsAsync(Result<ScanEventResponseDto>.Success(response));
 
         // Act
-        var result = await _controller.CreatePointsAndClaimRewards(request);
+        var result = await _controller.CreatePointsAndClaimRewards(businessId, request, businessUserId);
 
         // Assert
         var createdResult = result.Result.Should().BeOfType<CreatedAtRouteResult>().Subject;
@@ -227,6 +235,8 @@ public class RewardOwnerScanControllerTests
     public async Task CreatePointsAndClaimRewards_WhenServiceFails_ReturnsBadRequest()
     {
         // Arrange
+        var businessId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var businessUserId = Guid.Parse("a1111111-1111-1111-1111-111111111111");
         var request = new ScanEventForCreationDto
         {
             QrCodeValue = "INVALID",
@@ -234,13 +244,13 @@ public class RewardOwnerScanControllerTests
             PointsChange = 1,
             NumRewardsToClaim = 0
         };
-        
+
         _mockRewardService
-            .Setup(s => s.ProcessScanAndRewardsAsync(request))
+            .Setup(s => s.ProcessScanAndRewardsAsync(businessId, businessUserId, request))
             .ReturnsAsync(Result<ScanEventResponseDto>.Failure("Customer not found"));
 
         // Act
-        var result = await _controller.CreatePointsAndClaimRewards(request);
+        var result = await _controller.CreatePointsAndClaimRewards(businessId, request, businessUserId);
 
         // Assert
         var badRequestResult = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
@@ -251,6 +261,8 @@ public class RewardOwnerScanControllerTests
     public async Task CreatePointsAndClaimRewards_WithInsufficientPoints_ReturnsBadRequest()
     {
         // Arrange
+        var businessId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var businessUserId = Guid.Parse("a1111111-1111-1111-1111-111111111111");
         var request = new ScanEventForCreationDto
         {
             QrCodeValue = "QR001",
@@ -258,13 +270,13 @@ public class RewardOwnerScanControllerTests
             PointsChange = 1,
             NumRewardsToClaim = 5  // Trying to claim more than available
         };
-        
+
         _mockRewardService
-            .Setup(s => s.ProcessScanAndRewardsAsync(request))
+            .Setup(s => s.ProcessScanAndRewardsAsync(businessId, businessUserId, request))
             .ReturnsAsync(Result<ScanEventResponseDto>.Failure("Insufficient points. Required: 25, Available: 10"));
 
         // Act
-        var result = await _controller.CreatePointsAndClaimRewards(request);
+        var result = await _controller.CreatePointsAndClaimRewards(businessId, request, businessUserId);
 
         // Assert
         var badRequestResult = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject;

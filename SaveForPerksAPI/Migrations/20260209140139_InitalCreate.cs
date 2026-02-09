@@ -260,6 +260,12 @@ namespace SaveForPerksAPI.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_business_user_auth_provider_id",
+                table: "business_user",
+                column: "auth_provider_id",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_business_user_business_id",
                 table: "business_user",
                 column: "business_id");

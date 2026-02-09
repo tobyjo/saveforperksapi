@@ -10,6 +10,9 @@ namespace SaveForPerksAPI.Models
 
         public string BusinessDescription { get; set; } = null!;
 
+        [Required(ErrorMessage = "BusinessCategoryId value is required")]
+        public Guid BusinessCategoryId { get; set; }
+
         [Required(ErrorMessage = "BusinessUserAuthProviderId value is required")]
         public string BusinessUserAuthProviderId { get; set; } = null!;
 

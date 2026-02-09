@@ -19,20 +19,20 @@ namespace SaveForPerksAPI.Controllers.Business
 
         [HttpPost]
         public async Task<ActionResult<RewardDto>> CreateReward(
-            Guid rewardOwnerId,
+            Guid businessId,
             [FromBody] RewardForCreationDto rewardForCreationDto,
             [FromHeader(Name = "X-BusinessUser-Id")] Guid businessUserId)
         {
             Logger.LogInformation(
                 "CreateReward called with BusinessId: {BusinessId}, Name: {Name}, Type: {Type}, CostPoints: {CostPoints}, BusinessUserId: {BusinessUserId}",
-                rewardOwnerId, 
+                businessId, 
                 rewardForCreationDto.Name,
                 rewardForCreationDto.RewardType,
                 rewardForCreationDto.CostPoints,
                 businessUserId);
 
             // Override the RewardOwnerId from the route parameter
-            rewardForCreationDto.BusinessId = rewardOwnerId;
+            rewardForCreationDto.BusinessId = businessId;
 
             return await ExecuteAsync(
                 () => _rewardManagementService.CreateRewardAsync(rewardForCreationDto, businessUserId),

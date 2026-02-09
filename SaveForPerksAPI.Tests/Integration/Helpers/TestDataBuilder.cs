@@ -197,26 +197,28 @@ public class TestDataBuilder
     /// <summary>
     /// Creates a scenario: New user with no points yet
     /// </summary>
-    public async Task<(Customer user, Reward reward)> CreateNewUserScenario()
+    public async Task<(Customer user, Reward reward, BusinessUser businessUser)> CreateNewUserScenario()
     {
+        var businessUser = await CreateRewardOwner();
         var user = await CreateUser("Bob", "QR002-BOB-8888");
-        var reward = await CreateReward("Free Coffee", 5);
+        var reward = await CreateReward("Free Coffee", 5, RewardType.IncrementalPoints, businessUser);
 
-        return (user, reward);
+        return (user, reward, businessUser);
     }
 
     /// <summary>
     /// Creates a scenario: Customer with insufficient points
     /// </summary>
-    public async Task<(Customer user, Reward reward, CustomerBalance balance)> CreateUserWithInsufficientPoints(
+    public async Task<(Customer user, Reward reward, CustomerBalance balance, BusinessUser businessUser)> CreateUserWithInsufficientPoints(
         int currentPoints = 3,
         int rewardCost = 5)
     {
+        var businessUser = await CreateRewardOwner();
         var user = await CreateUser("Charlie", "QR003-CHARLIE-7777");
-        var reward = await CreateReward("Free Coffee", rewardCost);
+        var reward = await CreateReward("Free Coffee", rewardCost, RewardType.IncrementalPoints, businessUser);
         var balance = await CreateUserBalance(user, reward, currentPoints);
 
-        return (user, reward, balance);
+        return (user, reward, balance, businessUser);
     }
 
     /// <summary>

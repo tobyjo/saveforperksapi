@@ -12,7 +12,7 @@ using SaveForPerksAPI.DbContexts;
 namespace SaveForPerksAPI.Migrations
 {
     [DbContext(typeof(SaveForPerksContext))]
-    [Migration("20260209122309_InitalCreate")]
+    [Migration("20260209140139_InitalCreate")]
     partial class InitalCreate
     {
         /// <inheritdoc />
@@ -189,6 +189,9 @@ namespace SaveForPerksAPI.Migrations
                         .HasColumnName("name");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AuthProviderId")
+                        .IsUnique();
 
                     b.HasIndex("BusinessId");
 

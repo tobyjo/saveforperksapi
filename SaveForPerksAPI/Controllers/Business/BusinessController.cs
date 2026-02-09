@@ -7,14 +7,14 @@ namespace SaveForPerksAPI.Controllers.Business
     [Route("api/business")]
     public class BusinessController : BaseApiController
     {
-        private readonly IRewardTransactionService _rewardTransactionService;
+        private readonly IBusinessService _businessService;
 
         public BusinessController(
-            IRewardTransactionService rewardTransactionService,
-            ILogger<BusinessScanController> logger)
+            IBusinessService businessService,
+            ILogger<BusinessController> logger)
             : base(logger)
         {
-            _rewardTransactionService = rewardTransactionService ?? throw new ArgumentNullException(nameof(rewardTransactionService));
+            _businessService = businessService ?? throw new ArgumentNullException(nameof(businessService));
         }
 
         [HttpPost]
@@ -28,7 +28,7 @@ namespace SaveForPerksAPI.Controllers.Business
                 businessWithAdminUserForCreationDto.BusinessUserAuthProviderId);
 
             return await ExecuteAsync(
-                () => _rewardTransactionService.CreateBusinessAsync(businessWithAdminUserForCreationDto),
+                () => _businessService.CreateBusinessAsync(businessWithAdminUserForCreationDto),
                 nameof(CreateBusinessWithAdminUser));
         }
 

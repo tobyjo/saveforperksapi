@@ -82,7 +82,7 @@ public class RewardServiceIntegrationTests : IDisposable
     public async Task ProcessScan_NewUser_CreatesBalanceAndScanEvent()
     {
         // Arrange - Create test data
-        var (user, reward) = await _testData.CreateNewUserScenario();
+        var (user, reward, businessUser) = await _testData.CreateNewUserScenario();
 
         var request = new ScanEventForCreationDto
         {
@@ -93,7 +93,10 @@ public class RewardServiceIntegrationTests : IDisposable
         };
 
         // Act - Call real service with real database
-        var result = await _fixture.Service.ProcessScanAndRewardsAsync(request);
+        var result = await _fixture.Service.ProcessScanAndRewardsAsync(
+            businessUser.BusinessId, 
+            businessUser.Id, 
+            request);
 
         // Assert - Verify response
         result.IsSuccess.Should().BeTrue();
@@ -120,8 +123,9 @@ public class RewardServiceIntegrationTests : IDisposable
     {
         // Arrange - Customer already has 4 points (use unique QR to avoid collision with real DB)
         var uniqueQr = $"TEST-EXISTING-{Guid.NewGuid()}";
+        var businessUser = await _testData.CreateRewardOwner();
         var user = await _testData.CreateUser("ExistingUser", uniqueQr);
-        var reward = await _testData.CreateReward("Free Coffee", costPoints: 5);
+        var reward = await _testData.CreateReward("Free Coffee", costPoints: 5, rewardOwner: businessUser);
         await _testData.CreateUserBalance(user, reward, balance: 4);
 
         var request = new ScanEventForCreationDto
@@ -133,7 +137,10 @@ public class RewardServiceIntegrationTests : IDisposable
         };
 
         // Act
-        var result = await _fixture.Service.ProcessScanAndRewardsAsync(request);
+        var result = await _fixture.Service.ProcessScanAndRewardsAsync(
+            businessUser.BusinessId,
+            businessUser.Id,
+            request);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -158,8 +165,9 @@ public class RewardServiceIntegrationTests : IDisposable
         // Arrange - Customer has 3 points, claims 2 points which now matches reward (costs 5 points) but cannot claim yet 
         // Use unique QR code to avoid collision with real database
         var uniqueQr = $"TEST-CLAIM-{Guid.NewGuid()}";
+        var businessUser = await _testData.CreateRewardOwner();
         var user = await _testData.CreateUser("TobyUser", uniqueQr);
-        var reward = await _testData.CreateReward("Free Coffee after 5 paid coffees", costPoints: 5);
+        var reward = await _testData.CreateReward("Free Coffee after 5 paid coffees", costPoints: 5, rewardOwner: businessUser);
         await _testData.CreateUserBalance(user, reward, balance: 3);
 
         var request = new ScanEventForCreationDto
@@ -171,7 +179,10 @@ public class RewardServiceIntegrationTests : IDisposable
         };
 
         // Act
-        var result = await _fixture.Service.ProcessScanAndRewardsAsync(request);
+        var result = await _fixture.Service.ProcessScanAndRewardsAsync(
+            businessUser.BusinessId,
+            businessUser.Id,
+            request);
 
         // Assert - Response
         result.IsSuccess.Should().BeTrue();
@@ -202,8 +213,9 @@ public class RewardServiceIntegrationTests : IDisposable
         // Arrange - Customer has 10 points, wants to claim 1 reward (costs 5 points)
         // Use unique QR code to avoid collision with real database
         var uniqueQr = $"TEST-CLAIM-{Guid.NewGuid()}";
+        var businessUser = await _testData.CreateRewardOwner();
         var user = await _testData.CreateUser("ClaimUser", uniqueQr);
-        var reward = await _testData.CreateReward("Free Coffee", costPoints: 5);
+        var reward = await _testData.CreateReward("Free Coffee", costPoints: 5, rewardOwner: businessUser);
         await _testData.CreateUserBalance(user, reward, balance: 10);
 
         var request = new ScanEventForCreationDto
@@ -215,7 +227,10 @@ public class RewardServiceIntegrationTests : IDisposable
         };
 
         // Act
-        var result = await _fixture.Service.ProcessScanAndRewardsAsync(request);
+        var result = await _fixture.Service.ProcessScanAndRewardsAsync(
+            businessUser.BusinessId,
+            businessUser.Id,
+            request);
 
         // Assert - Response
         result.IsSuccess.Should().BeTrue();
@@ -245,8 +260,9 @@ public class RewardServiceIntegrationTests : IDisposable
         // Arrange - Customer has 12 points, wants to claim 2 rewards (costs 5 points each)
         // Use unique QR code to avoid collision with real database
         var uniqueQr = $"TEST-MULTI-{Guid.NewGuid()}";
+        var businessUser = await _testData.CreateRewardOwner();
         var user = await _testData.CreateUser("MultiClaimUser", uniqueQr);
-        var reward = await _testData.CreateReward("Free Coffee", costPoints: 5);
+        var reward = await _testData.CreateReward("Free Coffee", costPoints: 5, rewardOwner: businessUser);
         await _testData.CreateUserBalance(user, reward, balance: 12);
 
         var request = new ScanEventForCreationDto
@@ -258,7 +274,10 @@ public class RewardServiceIntegrationTests : IDisposable
         };
 
         // Act
-        var result = await _fixture.Service.ProcessScanAndRewardsAsync(request);
+        var result = await _fixture.Service.ProcessScanAndRewardsAsync(
+            businessUser.BusinessId,
+            businessUser.Id,
+            request);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -278,7 +297,7 @@ public class RewardServiceIntegrationTests : IDisposable
     public async Task ProcessScan_InsufficientPoints_ReturnsFailureAndDoesNotModifyDatabase()
     {
         // Arrange - Customer only has 3 points, but reward costs 5
-        var (user, reward, balance) = await _testData.CreateUserWithInsufficientPoints(
+        var (user, reward, balance, businessUser) = await _testData.CreateUserWithInsufficientPoints(
             currentPoints: 3,
             rewardCost: 5);
 
@@ -291,7 +310,10 @@ public class RewardServiceIntegrationTests : IDisposable
         };
 
         // Act
-        var result = await _fixture.Service.ProcessScanAndRewardsAsync(request);
+        var result = await _fixture.Service.ProcessScanAndRewardsAsync(
+            businessUser.BusinessId,
+            businessUser.Id,
+            request);
 
         // Assert - Returns failure
         result.IsFailure.Should().BeTrue();
@@ -325,7 +347,8 @@ public class RewardServiceIntegrationTests : IDisposable
     public async Task ProcessScan_InvalidQrCode_ReturnsFailure()
     {
         // Arrange - QR code doesn't exist
-        var reward = await _testData.CreateReward();
+        var businessUser = await _testData.CreateRewardOwner();
+        var reward = await _testData.CreateReward(rewardOwner: businessUser);
 
         var request = new ScanEventForCreationDto
         {
@@ -336,7 +359,10 @@ public class RewardServiceIntegrationTests : IDisposable
         };
 
         // Act
-        var result = await _fixture.Service.ProcessScanAndRewardsAsync(request);
+        var result = await _fixture.Service.ProcessScanAndRewardsAsync(
+            businessUser.BusinessId,
+            businessUser.Id,
+            request);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -347,6 +373,7 @@ public class RewardServiceIntegrationTests : IDisposable
     public async Task ProcessScan_InvalidRewardId_ReturnsFailure()
     {
         // Arrange - Reward doesn't exist
+        var businessUser = await _testData.CreateRewardOwner();
         var user = await _testData.CreateUser();
 
         var request = new ScanEventForCreationDto
@@ -358,7 +385,10 @@ public class RewardServiceIntegrationTests : IDisposable
         };
 
         // Act
-        var result = await _fixture.Service.ProcessScanAndRewardsAsync(request);
+        var result = await _fixture.Service.ProcessScanAndRewardsAsync(
+            businessUser.BusinessId,
+            businessUser.Id,
+            request);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -369,8 +399,9 @@ public class RewardServiceIntegrationTests : IDisposable
     public async Task ProcessScan_ClaimRewardWithoutBalance_ReturnsFailure()
     {
         // Arrange - Customer exists but has never scanned (no balance record)
+        var businessUser = await _testData.CreateRewardOwner();
         var user = await _testData.CreateUser();
-        var reward = await _testData.CreateReward();
+        var reward = await _testData.CreateReward(rewardOwner: businessUser);
         // No balance created!
 
         var request = new ScanEventForCreationDto
@@ -382,7 +413,10 @@ public class RewardServiceIntegrationTests : IDisposable
         };
 
         // Act
-        var result = await _fixture.Service.ProcessScanAndRewardsAsync(request);
+        var result = await _fixture.Service.ProcessScanAndRewardsAsync(
+            businessUser.BusinessId,
+            businessUser.Id,
+            request);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -398,8 +432,9 @@ public class RewardServiceIntegrationTests : IDisposable
     {
         // Arrange - Use a UNIQUE QR code that definitely doesn't exist in real database
         var uniqueQr = $"TEST-UNIQUE-{Guid.NewGuid()}";
+        var businessUser = await _testData.CreateRewardOwner();
         var user = await _testData.CreateUser("TestOnlyUser", uniqueQr);
-        var reward = await _testData.CreateReward("Free Coffee", costPoints: 5);
+        var reward = await _testData.CreateReward("Free Coffee", costPoints: 5, rewardOwner: businessUser);
         var balance = await _testData.CreateUserBalance(user, reward, balance: 12);
 
         // VERIFY: Customer was created in in-memory database with correct name
@@ -408,6 +443,7 @@ public class RewardServiceIntegrationTests : IDisposable
 
         // Act
         var result = await _fixture.Service.GetCustomerBalanceForRewardAsync(
+            businessUser.BusinessId,
             reward.Id,
             uniqueQr);
 
@@ -427,10 +463,11 @@ public class RewardServiceIntegrationTests : IDisposable
     public async Task GetUserBalance_NoBalance_ReturnsZeroPoints()
     {
         // Arrange - Customer exists but no scans yet
-        var (user, reward) = await _testData.CreateNewUserScenario();
+        var (user, reward, businessUser) = await _testData.CreateNewUserScenario();
 
         // Act
         var result = await _fixture.Service.GetCustomerBalanceForRewardAsync(
+            businessUser.BusinessId,
             reward.Id,
             user.QrCodeValue);
 
@@ -445,10 +482,12 @@ public class RewardServiceIntegrationTests : IDisposable
     public async Task GetUserBalance_InvalidQrCode_ReturnsFailure()
     {
         // Arrange
-        var reward = await _testData.CreateReward();
+        var businessUser = await _testData.CreateRewardOwner();
+        var reward = await _testData.CreateReward(rewardOwner: businessUser);
 
         // Act
         var result = await _fixture.Service.GetCustomerBalanceForRewardAsync(
+            businessUser.BusinessId,
             reward.Id,
             "INVALID-QR");
 
@@ -465,12 +504,14 @@ public class RewardServiceIntegrationTests : IDisposable
     public async Task GetScanEvent_ExistingEvent_ReturnsDto()
     {
         // Arrange
+        var businessUser = await _testData.CreateRewardOwner();
         var user = await _testData.CreateUser();
-        var reward = await _testData.CreateReward();
+        var reward = await _testData.CreateReward(rewardOwner: businessUser);
         var scanEvent = await _testData.CreateScanEvent(user, reward, pointsChange: 1);
 
         // Act
         var result = await _fixture.Service.GetScanEventForRewardAsync(
+            businessUser.BusinessId,
             reward.Id,
             scanEvent.Id);
 
@@ -486,10 +527,12 @@ public class RewardServiceIntegrationTests : IDisposable
     public async Task GetScanEvent_NonExistentEvent_ReturnsFailure()
     {
         // Arrange
-        var reward = await _testData.CreateReward();
+        var businessUser = await _testData.CreateRewardOwner();
+        var reward = await _testData.CreateReward(rewardOwner: businessUser);
 
         // Act
         var result = await _fixture.Service.GetScanEventForRewardAsync(
+            businessUser.BusinessId,
             reward.Id,
             Guid.NewGuid());
 
@@ -506,10 +549,13 @@ public class RewardServiceIntegrationTests : IDisposable
     public async Task CompleteUserJourney_MultipleScansAndClaims_WorksCorrectly()
     {
         // Arrange - Start with new user
-        var (user, reward) = await _testData.CreateNewUserScenario();
+        var (user, reward, businessUser) = await _testData.CreateNewUserScenario();
 
         // Act & Assert - Scan 1: Earn first point
-        var scan1 = await _fixture.Service.ProcessScanAndRewardsAsync(new ScanEventForCreationDto
+        var scan1 = await _fixture.Service.ProcessScanAndRewardsAsync(
+            businessUser.BusinessId,
+            businessUser.Id,
+            new ScanEventForCreationDto
         {
             QrCodeValue = user.QrCodeValue,
             RewardId = reward.Id,
@@ -522,7 +568,10 @@ public class RewardServiceIntegrationTests : IDisposable
         // Scan 2-5: Earn more points
         for (int i = 0; i < 4; i++)
         {
-            await _fixture.Service.ProcessScanAndRewardsAsync(new ScanEventForCreationDto
+            await _fixture.Service.ProcessScanAndRewardsAsync(
+                businessUser.BusinessId,
+                businessUser.Id,
+                new ScanEventForCreationDto
             {
                 QrCodeValue = user.QrCodeValue,
                 RewardId = reward.Id,
@@ -532,7 +581,10 @@ public class RewardServiceIntegrationTests : IDisposable
         }
 
         // Scan 6: Earn point and claim reward
-        var scan6 = await _fixture.Service.ProcessScanAndRewardsAsync(new ScanEventForCreationDto
+        var scan6 = await _fixture.Service.ProcessScanAndRewardsAsync(
+            businessUser.BusinessId,
+            businessUser.Id,
+            new ScanEventForCreationDto
         {
             QrCodeValue = user.QrCodeValue,
             RewardId = reward.Id,
@@ -563,14 +615,18 @@ public class RewardServiceIntegrationTests : IDisposable
     public async Task MultipleUsers_SameReward_IndependentBalances()
     {
         // Arrange - Two users, same reward
-        var reward = await _testData.CreateReward("Free Coffee", 5);
+        var businessUser = await _testData.CreateRewardOwner();
+        var reward = await _testData.CreateReward("Free Coffee", 5, RewardType.IncrementalPoints, businessUser);
         var alice = await _testData.CreateUser("Alice", "QR001-ALICE");
         var bob = await _testData.CreateUser("Bob", "QR002-BOB");
 
         // Act - Alice earns 10 points
         for (int i = 0; i < 10; i++)
         {
-            await _fixture.Service.ProcessScanAndRewardsAsync(new ScanEventForCreationDto
+            await _fixture.Service.ProcessScanAndRewardsAsync(
+                businessUser.BusinessId,
+                businessUser.Id,
+                new ScanEventForCreationDto
             {
                 QrCodeValue = alice.QrCodeValue,
                 RewardId = reward.Id,
@@ -581,7 +637,10 @@ public class RewardServiceIntegrationTests : IDisposable
         // Bob earns 3 points
         for (int i = 0; i < 3; i++)
         {
-            await _fixture.Service.ProcessScanAndRewardsAsync(new ScanEventForCreationDto
+            await _fixture.Service.ProcessScanAndRewardsAsync(
+                businessUser.BusinessId,
+                businessUser.Id,
+                new ScanEventForCreationDto
             {
                 QrCodeValue = bob.QrCodeValue,
                 RewardId = reward.Id,
@@ -599,7 +658,10 @@ public class RewardServiceIntegrationTests : IDisposable
         bobBalance.Balance.Should().Be(3);
 
         // Alice can claim, Bob cannot
-        var aliceResult = await _fixture.Service.ProcessScanAndRewardsAsync(new ScanEventForCreationDto
+        var aliceResult = await _fixture.Service.ProcessScanAndRewardsAsync(
+            businessUser.BusinessId,
+            businessUser.Id,
+            new ScanEventForCreationDto
         {
             QrCodeValue = alice.QrCodeValue,
             RewardId = reward.Id,
@@ -608,7 +670,10 @@ public class RewardServiceIntegrationTests : IDisposable
         });
         aliceResult.IsSuccess.Should().BeTrue();
 
-        var bobResult = await _fixture.Service.ProcessScanAndRewardsAsync(new ScanEventForCreationDto
+        var bobResult = await _fixture.Service.ProcessScanAndRewardsAsync(
+            businessUser.BusinessId,
+            businessUser.Id,
+            new ScanEventForCreationDto
         {
             QrCodeValue = bob.QrCodeValue,
             RewardId = reward.Id,

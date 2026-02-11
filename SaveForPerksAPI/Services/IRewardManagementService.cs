@@ -7,5 +7,7 @@ public interface IRewardManagementService
 {
     Task<Result<RewardDto>> CreateRewardAsync(RewardForCreationDto request, Guid businessUserId);
 
+    Task<Result<RewardDto>> UpdateRewardAsync(Guid rewardId, RewardForUpdateDto request, Guid businessUserId);
+
     Task<Result<IEnumerable<RewardDto>>> GetRewardsByBusinessIdAsync(Guid businessId, Guid businessUserId);
 }

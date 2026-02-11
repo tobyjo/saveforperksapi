@@ -134,7 +134,13 @@ public class BusinessUserService : IBusinessUserService
         // 4. Determine if profile exists based on Business.Name
         var businessProfileExists = !string.IsNullOrWhiteSpace(business.Name);
 
-        // 5. Map and build response
+        // 5. Get rewards for this business
+        var reward = await _repository.GetRewardByBusinessIdAsync(businessUser.BusinessId);
+        var rewards = reward != null 
+            ? new List<RewardDto> { _mapper.Map<RewardDto>(reward) }
+            : new List<RewardDto>();
+
+        // 6. Map and build response
         var businessDto = _mapper.Map<BusinessDto>(business);
         var businessUserDto = _mapper.Map<BusinessUserDto>(businessUser);
 
@@ -142,12 +148,13 @@ public class BusinessUserService : IBusinessUserService
         {
             BusinessProfileExists = businessProfileExists,
             Business = businessDto,
-            BusinessUser = businessUserDto
+            BusinessUser = businessUserDto,
+            Rewards = rewards
         };
 
         _logger.LogInformation(
-            "BusinessUserProfile found for authProviderId: {AuthProviderId}, BusinessId: {BusinessId}, BusinessUserId: {BusinessUserId}, ProfileExists: {ProfileExists}",
-            authProviderId, business.Id, businessUser.Id, businessProfileExists);
+            "BusinessUserProfile found for authProviderId: {AuthProviderId}, BusinessId: {BusinessId}, BusinessUserId: {BusinessUserId}, ProfileExists: {ProfileExists}, RewardCount: {RewardCount}",
+            authProviderId, business.Id, businessUser.Id, businessProfileExists, rewards.Count);
 
         return Result<IEnumerable<BusinessUserProfileResponseDto>>.Success(
             new List<BusinessUserProfileResponseDto> { profile });

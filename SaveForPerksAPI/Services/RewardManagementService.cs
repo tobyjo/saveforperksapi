@@ -61,6 +61,144 @@ public class RewardManagementService : IRewardManagementService
         return Result<RewardDto>.Success(rewardDto);
     }
 
+    public async Task<Result<RewardDto>> UpdateRewardAsync(Guid rewardId, RewardForUpdateDto request, Guid businessUserId)
+    {
+        // 1. Validate request
+        var validationResult = ValidateUpdateRewardRequest(request);
+        if (validationResult.IsFailure)
+            return Result<RewardDto>.Failure(validationResult.Error!);
+
+        // 2. Get reward and validate it exists
+        var reward = await _repository.GetRewardAsync(rewardId);
+        if (reward == null)
+        {
+            _logger.LogWarning("Reward not found. RewardId: {RewardId}", rewardId);
+            return Result<RewardDto>.Failure("Reward not found");
+        }
+
+        // 3. Get BusinessUser and validate
+        var businessUser = await _repository.GetBusinessUserByIdAsync(businessUserId);
+        if (businessUser == null)
+        {
+            _logger.LogWarning("BusinessUser not found. BusinessUserId: {BusinessUserId}", businessUserId);
+            return Result<RewardDto>.Failure("User not found");
+        }
+
+        // 4. Verify BusinessUser belongs to the same Business as the Reward
+        if (businessUser.BusinessId != reward.BusinessId)
+        {
+            _logger.LogWarning(
+                "Authorization failed: BusinessUser {BusinessUserId} does not belong to Business {BusinessId} that owns Reward {RewardId}",
+                businessUserId, reward.BusinessId, rewardId);
+            return Result<RewardDto>.Failure("You do not have permission to modify this reward");
+        }
+
+        // 5. Verify BusinessUser is an admin
+        if (!businessUser.IsAdmin)
+        {
+            _logger.LogWarning(
+                "Authorization failed: BusinessUser {BusinessUserId} is not an admin. Cannot update Reward {RewardId}",
+                businessUserId, rewardId);
+            return Result<RewardDto>.Failure("Only administrators can modify rewards");
+        }
+
+        // 6. Update the reward
+        var updateResult = await UpdateRewardEntityAsync(reward, request, businessUserId);
+        if (updateResult.IsFailure)
+            return Result<RewardDto>.Failure(updateResult.Error!);
+
+        var updatedReward = updateResult.Value;
+
+        // 7. Map and return
+        var rewardDto = _mapper.Map<RewardDto>(updatedReward);
+
+        _logger.LogInformation(
+            "Reward updated successfully. RewardId: {RewardId}, BusinessId: {BusinessId}, UpdatedBy: {BusinessUserId}",
+            rewardId, reward.BusinessId, businessUserId);
+
+        return Result<RewardDto>.Success(rewardDto);
+    }
+
+    private Result<bool> ValidateUpdateRewardRequest(RewardForUpdateDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            _logger.LogWarning("Validation failed: Name is required");
+            return Result<bool>.Failure("Reward name is required");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.RewardType))
+        {
+            _logger.LogWarning("Validation failed: RewardType is required");
+            return Result<bool>.Failure("Reward type is required");
+        }
+
+        // Validate RewardType value
+        if (!Enum.TryParse<RewardType>(request.RewardType, ignoreCase: true, out _))
+        {
+            _logger.LogWarning(
+                "Validation failed: Invalid RewardType. Value: {RewardType}", 
+                request.RewardType);
+            return Result<bool>.Failure($"Invalid reward type: {request.RewardType}");
+        }
+
+        if (!request.CostPoints.HasValue)
+        {
+            _logger.LogWarning("Validation failed: CostPoints is required");
+            return Result<bool>.Failure("Cost points is required");
+        }
+
+        if (request.CostPoints.Value < 0)
+        {
+            _logger.LogWarning(
+                "Validation failed: CostPoints must be non-negative. Value: {CostPoints}", 
+                request.CostPoints.Value);
+            return Result<bool>.Failure("Cost points must be zero or greater");
+        }
+
+        return Result<bool>.Success(true);
+    }
+
+    private async Task<Result<Reward>> UpdateRewardEntityAsync(
+        Reward reward, 
+        RewardForUpdateDto request, 
+        Guid businessUserId)
+    {
+        try
+        {
+            // Update the reward properties
+            reward.Name = request.Name;
+            reward.RewardType = Enum.Parse<RewardType>(request.RewardType, ignoreCase: true);
+            reward.CostPoints = request.CostPoints!.Value;
+
+            if (request.IsActive.HasValue)
+            {
+                reward.IsActive = request.IsActive.Value;
+            }
+
+            _logger.LogInformation(
+                "Reward entity updated. RewardId: {RewardId}, Name: {Name}, UpdatedBy: {BusinessUserId}",
+                reward.Id, reward.Name, businessUserId);
+
+            // Save changes (EF Core tracks changes automatically)
+            await _repository.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Transaction committed successfully. RewardId: {RewardId}",
+                reward.Id);
+
+            return Result<Reward>.Success(reward);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to update reward. RewardId: {RewardId}, Name: {Name}, Error: {Error}",
+                reward.Id, request.Name, ex.Message);
+            return Result<Reward>.Failure(
+                "An error occurred while updating the reward");
+        }
+    }
+
     private Result<bool> ValidateCreateRewardRequest(RewardForCreationDto request)
     {
         if (request.BusinessId == Guid.Empty)

@@ -54,6 +54,24 @@ namespace SaveForPerksAPI.Controllers.Business
                 nameof(GetRewards));
         }
 
+        [HttpPut("{rewardId}")]
+        public async Task<ActionResult<RewardDto>> UpdateReward(
+            Guid businessId,
+            Guid rewardId,
+            [FromBody] RewardForUpdateDto rewardForUpdateDto,
+            [FromHeader(Name = "X-BusinessUser-Id")] Guid businessUserId)
+        {
+            Logger.LogInformation(
+                "UpdateReward called with BusinessId: {BusinessId}, RewardId: {RewardId}, BusinessUserId: {BusinessUserId}",
+                businessId,
+                rewardId,
+                businessUserId);
+
+            return await ExecuteAsync(
+                () => _rewardManagementService.UpdateRewardAsync(rewardId, rewardForUpdateDto, businessUserId),
+                nameof(UpdateReward));
+        }
+
         // CRUD endpoints for Reward will be added here
     }
 }

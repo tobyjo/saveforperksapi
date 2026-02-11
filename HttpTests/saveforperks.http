@@ -2,7 +2,11 @@
 # @url = https://saveforperks-webapi-g4cpbzf4dpbqd9cd.uksouth-01.azurewebsites.net/api/
 @url = http://localhost:5143/api/
 @contentType = application/json
-@businessUserId = A2222222-2222-2222-2222-222222222222
+
+@auth0UserId = auth0|698b36c760e655fa928e76b8
+@businessId = 75B8DDC5-5162-454D-A4CB-D945C00ED74B
+@businessUserId = 46C48332-E633-43D7-BB4C-C66322F56535
+@rewardId = f11a2397-e293-4ecf-bac7-ab8cf18d812d
 
 # *************** HEALTH CHECK **************************
 
@@ -45,7 +49,7 @@ GET {{url}}business-user/by-auth/auth0|6978c6069f7c25664b0c13cf
 # Use this instead
 # Step 30 Get BusinessUser and Business details and see if Business.Name has been completed (BusinessProfileExists) 
 ### Combine above two into one call
-GET {{url}}business-user/profile/auth01234
+GET {{url}}business-user/profile/{{auth0UserId}}
 
 # END Reward Owner User
 
@@ -54,12 +58,12 @@ GET {{url}}business-user/profile/auth01234
 # Get Rewards for a businessId
 # Step 30
 ###
-GET {{url}}business/22222222-2222-2222-2222-222222222222/rewards
+GET {{url}}business/{{businessId}}/rewards
 X-BusinessUser-Id: {{businessUserId}}
 
 # Create a new Reward
 ###
-POST {{url}}business/22222222-2222-2222-2222-222222222222/rewards
+POST {{url}}business/{{businessId}}/rewards
 X-BusinessUser-Id: {{businessUserId}}
 Content-Type: application/json
 
@@ -69,6 +73,21 @@ Content-Type: application/json
   "costPoints": 10
 }
 
+# Update a reward
+###
+PUT {{url}}business/{{businessId}}/rewards/{{rewardId}}
+Content-Type: application/json
+X-BusinessUser-Id: {{businessUserId}}
+
+{
+  "name": "Buy 5 loaves and get 1 free (Updated)",
+  "rewardType": "IncrementalPoints",
+  "costPoints": 3,
+  "isActive": true
+}
+
+
+
 # Business Category
 ###
 GET {{url}}business-category
@@ -76,16 +95,12 @@ GET {{url}}business-category
 
 # Initial scan of qr code
 ###
-@businessId = 22222222-2222-2222-2222-222222222222
-@rewardId = ED83EB01-C41A-4AE7-8A41-D741C2F093E8
 GET {{url}}business/{{businessId}}/scans/{{rewardId}}/customerbalance/QR001-ALICE-9999
 
 
 # 1 Expect current balance of 2
 # Scan a users qr code to claim points for a reward and also reward redemption
 ###
-@businessId = 22222222-2222-2222-2222-222222222222
-@businessUserId = A2222222-2222-2222-2222-222222222222
 POST {{url}}business/{{businessId}}/scans
 X-BusinessUser-Id: {{businessUserId}}
 Content-Type: application/json
@@ -101,7 +116,6 @@ Content-Type: application/json
 
 # Customer
 ###
-@auth0UserId = auth0|user002
 GET {{url}}customer/by-auth/{{auth0UserId}}
 
 

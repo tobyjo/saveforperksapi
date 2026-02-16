@@ -1,5 +1,4 @@
-@testtoken = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InZKaTB5Z0FWd0ZhcnFCZk9sODAzLSJ9.eyJpc3MiOiJodHRwczovL2Rldi1pc2RzbnpsNThwZ214M2t3LnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJyTEZncGlXNml6WVFRWDUyc0JqQ29qbThwZjA3d1RnekBjbGllbnRzIiwiYXVkIjoidGltZXRyYWNrZXIiLCJpYXQiOjE3NjMyMjU4MTgsImV4cCI6MTc2MzMxMjIxOCwiZ3R5IjoiY2xpZW50LWNyZWRlbnRpYWxzIiwiYXpwIjoickxGZ3BpVzZpellRUVg1MnNCakNvam04cGYwN3dUZ3oifQ.UnAqA5vO0XQsmIOlDinUAx6gaYnPGlOQuib4N0x0r1hXYAyECIfZcTuGIVmNHcrG0mZLamCo5-vHhahHjq0kEydXK-votzA_6Z__GKW1L7KouPePlleEX3kWtsCryV1URYmZF53j2GiGAk6wb6ZTXsWH0pPW-b2y8rBb84rto6gm2PP3iKRqsuqG3eOkf_8TVTQTxxwZNvtCttAM5c1hH2beKNPTkhEZgXH7HsFi5ckJRLipINhvVYL_yM18sHIt5Pn-2BXm0sfwdCkb1XFwPO745_eSCV6tsCZjDga1lIN1eFEFq8GOsurn_muqgF2WEK2DBUj_8S722xFJ2ErDRg
-# @url = https://saveforperks-webapi-g4cpbzf4dpbqd9cd.uksouth-01.azurewebsites.net/api/
+@testtoken = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InZKaTB5Z0FWd0ZhcnFCZk9sODAzLSJ9.eyJpc3MiOiJodHRwczovL2Rldi1pc2RzbnpsNThwZ214M2t3LnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJiYU1SSFpoaVUwanRwbWRXQ1JJeGV1RGhIUFo2NmRSMUBjbGllbnRzIiwiYXVkIjoiaHR0cHM6Ly9zYXZlZm9ycGVya3MuY29tIiwiaWF0IjoxNzcxMjM2MDE4LCJleHAiOjE3NzEzMjI0MTgsImd0eSI6ImNsaWVudC1jcmVkZW50aWFscyIsImF6cCI6ImJhTVJIWmhpVTBqdHBtZFdDUkl4ZXVEaEhQWjY2ZFIxIn0.CtJotFYcdaIjEUvxXYfW18ITRnWP4VKSQwPB4N2rGX_WeZf6hc18jULYmHafmJUwzW4LfCWwZSvOD3oiq0pJzxdalMktgphyTdtMSwRGlMIiAvN18aGAhoc-_SWlC_O6oY-653qEfQeirfLwIjPHYmURUce9uGj8j6iie3r2YSJlNfkFz6_ZWutfJkyVU7SbUkIma6GQWCMckJ92KM_MmLE1qHyDwBu6m38iMSFlUrSpK6BlWdhc550L4Oc0RkNT2osXrUOek1t4AN5r9GlayqVF-gv2qRA-O08LT9AvDo53npfzwlScT7LG2XQoaG9vuXFh6eQAK84PVMVmZG1Hmw
 @url = http://localhost:5143/api/
 @contentType = application/json
 
@@ -7,6 +6,7 @@
 @businessId = 75B8DDC5-5162-454D-A4CB-D945C00ED74B
 @businessUserId = 46C48332-E633-43D7-BB4C-C66322F56535
 @rewardId = f11a2397-e293-4ecf-bac7-ab8cf18d812d
+@customerId = 3E2D99B8-3B81-4880-B151-FE6FA95600E6
 
 # *************** HEALTH CHECK **************************
 
@@ -129,3 +129,12 @@ Content-Type: application/json
 "Email": "customer@example.com",
 "Name": "Joe Customer"
 }
+
+# Get dashboard info for a customer
+###
+GET {{url}}customer/{{customerId}}/dashboard
+Authorization: Bearer  {{testtoken}}
+
+# Delete a customer
+###
+DELETE {{url}}customer/{{customerId}}

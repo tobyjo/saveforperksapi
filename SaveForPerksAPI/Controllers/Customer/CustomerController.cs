@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SaveForPerksAPI.Models;
 using SaveForPerksAPI.Services;
@@ -5,6 +6,7 @@ using SaveForPerksAPI.Services;
 namespace SaveForPerksAPI.Controllers.Customer
 {
     [Route("api/customer")]
+    [Authorize]
     public class CustomerController : BaseApiController
     {
         private readonly ICustomerService _customerService;

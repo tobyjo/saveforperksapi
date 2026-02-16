@@ -2,6 +2,7 @@
 using SaveForPerksAPI.Controllers.Business;
 using SaveForPerksAPI.Models;
 using SaveForPerksAPI.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SaveForPerksAPI.Controllers.BusinessUser
 {

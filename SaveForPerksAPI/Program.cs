@@ -121,6 +121,7 @@ builder.Services.AddScoped<IBusinessCategoryService, BusinessCategoryService>();
 builder.Services.AddScoped<IBusinessService, BusinessService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
+builder.Services.AddScoped<IAuth0ManagementService, Auth0ManagementService>();
 
 builder.Services.AddHttpContextAccessor();
 

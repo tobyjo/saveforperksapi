@@ -13,19 +13,22 @@ public class CustomerService : ICustomerService
     private readonly ILogger<CustomerService> _logger;
     private readonly IQrCodeService _qrCodeService;
     private readonly IAuthorizationService _authorizationService;
+    private readonly IAuth0ManagementService _auth0ManagementService;
 
     public CustomerService(
         ISaveForPerksRepository repository,
         IMapper mapper,
         ILogger<CustomerService> logger,
         IQrCodeService qrCodeService,
-        IAuthorizationService authorizationService)
+        IAuthorizationService authorizationService,
+        IAuth0ManagementService auth0ManagementService)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _qrCodeService = qrCodeService ?? throw new ArgumentNullException(nameof(qrCodeService));
         _authorizationService = authorizationService ?? throw new ArgumentNullException(nameof(authorizationService));
+        _auth0ManagementService = auth0ManagementService ?? throw new ArgumentNullException(nameof(auth0ManagementService));
     }
 
     public async Task<Result<CustomerDto>> GetCustomerByAuthProviderIdAsync(string authProviderId)
@@ -334,7 +337,7 @@ public class CustomerService : ICustomerService
             if (authCheck.IsFailure)
                 return Result<bool>.Failure(authCheck.Error!);
 
-            // 2. Verify customer exists (already done in ValidateCustomerAuthorizationAsync, but get reference)
+            // 2. Get customer (need auth provider ID for Auth0 deletion)
             var customer = await _repository.GetCustomerByIdAsync(customerId);
             if (customer == null)
             {
@@ -355,16 +358,32 @@ public class CustomerService : ICustomerService
             await _repository.DeleteScanEventsAsync(customerId);
             _logger.LogInformation("Deleted scan events for CustomerId: {CustomerId}", customerId);
 
-            // 4. Finally delete the customer
+            // 4. Delete the customer from database
             await _repository.DeleteCustomerAsync(customer);
             _logger.LogInformation("Deleted customer record for CustomerId: {CustomerId}", customerId);
 
-            // 5. Save all changes in one transaction
+            // 5. Save all database changes in one transaction
             await _repository.SaveChangesAsync();
 
             _logger.LogInformation(
-                "Customer deleted successfully. CustomerId: {CustomerId}, Email: {Email}, Name: {Name}",
+                "Customer deleted from database successfully. CustomerId: {CustomerId}, Email: {Email}, Name: {Name}",
                 customerId, customer.Email, customer.Name);
+
+            // 6. Delete from Auth0 (non-blocking - log errors but don't fail the request)
+            var auth0Deleted = await _auth0ManagementService.DeleteUserAsync(customer.AuthProviderId);
+            if (!auth0Deleted)
+            {
+                _logger.LogWarning(
+                    "Customer deleted from database but failed to delete from Auth0. CustomerId: {CustomerId}, AuthProviderId: {AuthProviderId}. Manual cleanup may be required.",
+                    customerId, customer.AuthProviderId);
+                // Don't fail the request - database deletion succeeded
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "Customer deleted from both database and Auth0. CustomerId: {CustomerId}, AuthProviderId: {AuthProviderId}",
+                    customerId, customer.AuthProviderId);
+            }
 
             return Result<bool>.Success(true);
         }

@@ -57,6 +57,21 @@ namespace SaveForPerksAPI.Controllers.Customer
                 nameof(GetDashboard));
         }
 
+        [HttpPut("{customerId}")]
+        public async Task<ActionResult<CustomerDto>> UpdateCustomer(
+            Guid customerId,
+            [FromBody] CustomerForUpdateDto customerForUpdateDto)
+        {
+            Logger.LogInformation(
+                "UpdateCustomer called for CustomerId: {CustomerId}, NewName: {Name}",
+                customerId,
+                customerForUpdateDto.Name);
+
+            return await ExecuteAsync(
+                () => _customerService.UpdateCustomerAsync(customerId, customerForUpdateDto),
+                nameof(UpdateCustomer));
+        }
+
         [HttpDelete("{customerId}")]
         public async Task<ActionResult> DeleteCustomer(Guid customerId)
         {

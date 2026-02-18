@@ -200,7 +200,7 @@ public class RewardTransactionService : IRewardTransactionService
             List<Guid>? redemptionIds = null;
             if (request.NumRewardsToClaim > 0)
             {
-                redemptionIds = await ClaimRewardsAsync(customer, reward, balance, request.NumRewardsToClaim);
+                redemptionIds = await ClaimRewardsAsync(customer, reward, balance, request.NumRewardsToClaim, businessUserId);
                 _logger.LogInformation(
                     "Rewards claimed. Customer: {CustomerId} ({CustomerName}), Reward: {RewardName}, Count: {Count}, PointsDeducted: {Points}", 
                     customer.Id, customer.Name, reward.Name, request.NumRewardsToClaim, reward.CostPoints * request.NumRewardsToClaim);
@@ -252,7 +252,12 @@ public class RewardTransactionService : IRewardTransactionService
         return existing;
     }
 
-    private async Task<List<Guid>> ClaimRewardsAsync(Customer customer, Reward reward, CustomerBalance balance, int count)
+    private async Task<List<Guid>> ClaimRewardsAsync(
+        Customer customer, 
+        Reward reward, 
+        CustomerBalance balance, 
+        int count,
+        Guid businessUserId)
     {
         var totalCost = reward.CostPoints * count;
         balance.Balance -= totalCost;
@@ -268,7 +273,7 @@ public class RewardTransactionService : IRewardTransactionService
                 Id = redemptionId,
                 CustomerId = customer.Id,
                 RewardId = reward.Id,
-                BusinessUserId = null, // Can be set if you track who processed the redemption
+                BusinessUserId = businessUserId,  // Track who processed the redemption
                 RedeemedAt = DateTime.UtcNow
             };
             await _repository.CreateRewardRedemption(redemption);

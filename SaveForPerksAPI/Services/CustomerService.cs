@@ -105,6 +105,92 @@ public class CustomerService : ICustomerService
         return Result<CustomerDto>.Success(userDto);
     }
 
+    public async Task<Result<CustomerDto>> UpdateCustomerAsync(Guid customerId, CustomerForUpdateDto request)
+    {
+        // 1. Validate JWT token matches customer's auth provider ID
+        var authCheck = await _authorizationService.ValidateCustomerAuthorizationAsync(customerId);
+        if (authCheck.IsFailure)
+            return Result<CustomerDto>.Failure(authCheck.Error!);
+
+        // 2. Validate request
+        var validationResult = ValidateUpdateCustomerRequest(request);
+        if (validationResult.IsFailure)
+            return Result<CustomerDto>.Failure(validationResult.Error!);
+
+        // 3. Get customer
+        var customer = await _repository.GetCustomerByIdAsync(customerId);
+        if (customer == null)
+        {
+            _logger.LogWarning("Customer not found for update. CustomerId: {CustomerId}", customerId);
+            return Result<CustomerDto>.Failure("Customer not found");
+        }
+
+        // 4. Update customer
+        var updateResult = await UpdateCustomerEntityAsync(customer, request);
+        if (updateResult.IsFailure)
+            return Result<CustomerDto>.Failure(updateResult.Error!);
+
+        var updatedCustomer = updateResult.Value;
+
+        // 5. Map and return
+        var customerDto = _mapper.Map<CustomerDto>(updatedCustomer);
+
+        _logger.LogInformation(
+            "Customer updated successfully. CustomerId: {CustomerId}, NewName: {Name}",
+            customerId, request.Name);
+
+        return Result<CustomerDto>.Success(customerDto);
+    }
+
+    private Result<bool> ValidateUpdateCustomerRequest(CustomerForUpdateDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            _logger.LogWarning("Validation failed: Name is required");
+            return Result<bool>.Failure("Name is required");
+        }
+
+        if (request.Name.Length > 100)
+        {
+            _logger.LogWarning("Validation failed: Name too long. Length: {Length}", request.Name.Length);
+            return Result<bool>.Failure("Name must not exceed 100 characters");
+        }
+
+        return Result<bool>.Success(true);
+    }
+
+    private async Task<Result<Customer>> UpdateCustomerEntityAsync(Customer customer, CustomerForUpdateDto request)
+    {
+        try
+        {
+            var oldName = customer.Name;
+
+            // Update the customer name
+            customer.Name = request.Name;
+
+            _logger.LogInformation(
+                "Customer entity updated. CustomerId: {CustomerId}, OldName: {OldName}, NewName: {NewName}",
+                customer.Id, oldName, customer.Name);
+
+            // Save changes (EF Core tracks changes automatically)
+            await _repository.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Transaction committed successfully. CustomerId: {CustomerId}",
+                customer.Id);
+
+            return Result<Customer>.Success(customer);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to update customer. CustomerId: {CustomerId}, Name: {Name}, Error: {Error}",
+                customer.Id, request.Name, ex.Message);
+            return Result<Customer>.Failure(
+                "An error occurred while updating the customer");
+        }
+    }
+
     private Result<bool> ValidateCreateUserRequest(CustomerForCreationDto request)
     {
         if (string.IsNullOrWhiteSpace(request.AuthProviderId))

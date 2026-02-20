@@ -183,6 +183,7 @@ public class RewardManagementService : IRewardManagementService
             reward.Name = request.Name;
             reward.RewardType = Enum.Parse<RewardType>(request.RewardType, ignoreCase: true);
             reward.CostPoints = request.CostPoints!.Value;
+            reward.ExpireDays = request.ExpireDays;
 
             if (request.IsActive.HasValue)
             {
@@ -330,6 +331,7 @@ public class RewardManagementService : IRewardManagementService
                 Name = request.Name,
                 RewardType = Enum.Parse<RewardType>(request.RewardType, ignoreCase: true),
                 CostPoints = request.CostPoints!.Value,
+                ExpireDays = request.ExpireDays,
                 IsActive = true, // Default to true
                 CreatedAt = DateTime.UtcNow
             };

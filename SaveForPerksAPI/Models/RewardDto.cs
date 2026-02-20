@@ -8,6 +8,7 @@ namespace SaveForPerksAPI.Models
 
         public string RewardType { get; set; } = string.Empty;
         public int? CostPoints { get; set; }
+        public int? ExpireDays { get; set; }
 
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }

@@ -13,8 +13,10 @@ namespace SaveForPerksAPI.Models
         [Required(ErrorMessage = "RewardType value is required")]
         public string RewardType { get; set; } = string.Empty;
 
-
         [Required(ErrorMessage = "CostPoints value is required")]
         public int? CostPoints { get; set; }
+
+        [Range(1, 365, ErrorMessage = "ExpireDays must be between 1 and 365 days")]
+        public int? ExpireDays { get; set; }
     }
 }

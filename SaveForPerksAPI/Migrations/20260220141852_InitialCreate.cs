@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace SaveForPerksAPI.Migrations
 {
     /// <inheritdoc />
-    public partial class InitalCreate : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -98,6 +98,7 @@ namespace SaveForPerksAPI.Migrations
                     is_active = table.Column<bool>(type: "bit", nullable: false),
                     cost_points = table.Column<int>(type: "int", nullable: false),
                     reward_type = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    expire_days = table.Column<int>(type: "int", nullable: true),
                     metadata = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     created_at = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "(sysdatetime())")
                 },
@@ -208,11 +209,12 @@ namespace SaveForPerksAPI.Migrations
                 columns: new[] { "id", "image_url", "name" },
                 values: new object[,]
                 {
-                    { new Guid("11111111-1111-1111-1111-111111111111"), "/images/categories/cafe.png", "Cafe" },
-                    { new Guid("22222222-2222-2222-2222-222222222222"), "/images/categories/coffee-shop.png", "Coffee Shop" },
-                    { new Guid("33333333-3333-3333-3333-333333333333"), "/images/categories/restaurant.png", "Restaurant" },
-                    { new Guid("44444444-4444-4444-4444-444444444444"), "/images/categories/bakery.png", "Bakery" },
-                    { new Guid("55555555-5555-5555-5555-555555555555"), "/images/categories/bar-pub.png", "Bar & Pub" }
+                    { new Guid("11111111-1111-1111-1111-111111111111"), "/images/categories/cafe.jpg", "Cafe / Casual Dining" },
+                    { new Guid("22222222-2222-2222-2222-222222222222"), "/images/categories/coffee-shop.jpg", "Coffee Shop" },
+                    { new Guid("33333333-3333-3333-3333-333333333333"), "/images/categories/restaurant.jpg", "Restaurant" },
+                    { new Guid("44444444-4444-4444-4444-444444444444"), "/images/categories/bakery.jpg", "Bakery" },
+                    { new Guid("55555555-5555-5555-5555-555555555555"), "/images/categories/bar-pub.jpg", "Bar / Pub" },
+                    { new Guid("66666666-6666-6666-6666-666666666666"), "/images/categories/other.jpg", "Other" }
                 });
 
             migrationBuilder.CreateIndex(

@@ -11,6 +11,7 @@ public class Reward
     public bool IsActive { get; set; }
     public int CostPoints { get; set; }
     public RewardType RewardType { get; set; }  // Changed from string to enum
+    public int? ExpireDays { get; set; }  // Number of days before points/rewards expire
     public string? Metadata { get; set; }
     public DateTime CreatedAt { get; set; }
 

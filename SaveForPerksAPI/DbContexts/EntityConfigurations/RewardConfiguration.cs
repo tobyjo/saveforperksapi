@@ -31,6 +31,9 @@ public class RewardConfiguration : IEntityTypeConfiguration<Reward>
         builder.Property(e => e.CostPoints)
             .HasColumnName("cost_points");
 
+        builder.Property(e => e.ExpireDays)
+            .HasColumnName("expire_days");
+
         // Store enum as string with snake_case conversion
         builder.Property(e => e.RewardType)
             .HasMaxLength(100)

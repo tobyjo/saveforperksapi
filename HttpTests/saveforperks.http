@@ -1,16 +1,17 @@
 
 # Capture token of real user from network - headers tab of API call
 
-@business-fred-token 
+@business-fred-token = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InZKaTB5Z0FWd0ZhcnFCZk9sODAzLSJ9.eyJodHRwczovL3NhdmVmb3JwZXJrcy5jb20vdXNlcl90eXBlIjoiYnVzaW5lc3MiLCJpc3MiOiJodHRwczovL2Rldi1pc2RzbnpsNThwZ214M2t3LnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJhdXRoMHw2OThiMjU3ZDBlOGU2YjU3MmZiOTc5YWMiLCJhdWQiOlsiaHR0cHM6Ly9zYXZlZm9ycGVya3MuY29tIiwiaHR0cHM6Ly9kZXYtaXNkc256bDU4cGdteDNrdy51cy5hdXRoMC5jb20vdXNlcmluZm8iXSwiaWF0IjoxNzcxMzI1NzQxLCJleHAiOjE3NzE0MTIxNDEsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwiLCJhenAiOiJJNHBubVdaUlVmeW9XRWd2SUpKS0JMYk56Z2xCS0VQQiIsInBlcm1pc3Npb25zIjpbXX0.Utew5Hzp02Oy-FV5n8wLVMgxA7knznKDlkTULdaQGOu1cRitn_DMkKi1BFYdyaLc25xs_Tqs5qEozUJwszTeZVUfcQeSGfaeP6vmCmkZdlmzuS0NV7F27LQLig1NGHVYqxzY5ae0K1sSWRousrQz5a8MSUU1s9PVsJWps3mWutUCYND6xJP0HXCax34ck3wHCpaTs_MDCyTNtZK9p5C95frjxFqkJKCZS7PZGBg85EVenPMxVLR3UHXg5KjMJnDuEUXZp3_eBlePxIg6C7Oqw3tIxAtX69-FEZk0fB8r55XY3ToHnWYIbGPCv33wDeHCZ6AbPPuLWVB3HbrUnTRbaA
 @customer-karen-testtoken = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InZKaTB5Z0FWd0ZhcnFCZk9sODAzLSJ9.eyJodHRwczovL3NhdmVmb3JwZXJrcy5jb20vdXNlcl90eXBlIjoiY3VzdG9tZXIiLCJpc3MiOiJodHRwczovL2Rldi1pc2RzbnpsNThwZ214M2t3LnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJhdXRoMHw2OThiMzlmMTYwZTY1NWZhOTI4ZTdhMmQiLCJhdWQiOlsiaHR0cHM6Ly9zYXZlZm9ycGVya3MuY29tIiwiaHR0cHM6Ly9kZXYtaXNkc256bDU4cGdteDNrdy51cy5hdXRoMC5jb20vdXNlcmluZm8iXSwiaWF0IjoxNzcxMjQ0OTkzLCJleHAiOjE3NzEzMzEzOTMsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwiLCJhenAiOiJJNHBubVdaUlVmeW9XRWd2SUpKS0JMYk56Z2xCS0VQQiIsInBlcm1pc3Npb25zIjpbXX0.N7Jpc1elX7HCCH7MIhj_g75V_txfyjX2pbK5xOA8GwIe-5uhHJBJmco5wsDsIntJoDtMv4BcWviNeTWtwo0XgoOfkq-MRd4IPvo-PJE4wbgamKFRXlRVx9xCs4gdTmO5eZLlyeQccTJG91MI8Cfap2yhNIFq-TMq32r5Ada_UsaatoRiTqBggpZk653MkcGEqQ0RJEQJGz0i_aukzzbTQcQIsgd0YTwlvO6Ez6KVFsnlEHWqTiRlR1h-8i49Kq9SQ3amDW-DV_rKTV2wIo4iHEp8mlRKb2sipWya9i7L0Esl0qSYAPOXFvBCnh6OFKHCo6wMKfceUqtITRf6UTyk5A
 @url = http://localhost:5143/api/
 @contentType = application/json
 
 @auth0UserId = auth0|698b36c760e655fa928e76b8
-@businessId = 75B8DDC5-5162-454D-A4CB-D945C00ED74B
-@businessUserId = 46C48332-E633-43D7-BB4C-C66322F56535
-@rewardId = f11a2397-e293-4ecf-bac7-ab8cf18d812d
+@businessId = 2B63DF7B-B31F-4DF3-9B94-A1919ECB4426
+@businessUserId = AA6F937B-AAFB-467F-849C-ADDBE000F927
+@rewardId = 1BD57823-D660-425D-AB98-92B166A6EA84
 @customerId = 3E2D99B8-3B81-4880-B151-FE6FA95600E6
+@qrcode = JEE5VP3OIEV5
 
 # *************** HEALTH CHECK **************************
 
@@ -99,8 +100,9 @@ GET {{url}}business-category
 
 # Initial scan of qr code
 ###
-GET {{url}}business/{{businessId}}/scans/{{rewardId}}/customerbalance/QR001-ALICE-9999
-
+GET {{url}}business/{{businessId}}/scans/{{rewardId}}/customerbalance/{{qrcode}}
+Authorization: Bearer  {{business-fred-token}}
+X-BusinessUser-Id: {{businessUserId}}
 
 # 1 Expect current balance of 2
 # Scan a users qr code to claim points for a reward and also reward redemption

@@ -30,7 +30,7 @@ public class RewardRedemptionConfiguration : IEntityTypeConfiguration<RewardRede
             .HasColumnName("redeemed_at");
 
         builder.Property(e => e.CustomerId)
-            .HasColumnName("user_id");
+            .HasColumnName("customer_id");
 
         builder.HasOne(d => d.BusinessUser)
             .WithMany(p => p.RewardRedemptions)

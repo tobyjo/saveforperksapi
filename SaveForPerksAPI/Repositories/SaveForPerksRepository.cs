@@ -259,6 +259,24 @@ namespace SaveForPerksAPI.Repositories
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<DateTime?> GetLastScanDateForCustomerRewardAsync(Guid customerId, Guid rewardId)
+        {
+            return await _context.ScanEvents
+                .Where(se => se.CustomerId == customerId && se.RewardId == rewardId)
+                .OrderByDescending(se => se.ScannedAt)
+                .Select(se => (DateTime?)se.ScannedAt)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<DateTime?> GetLastRedemptionDateForCustomerRewardAsync(Guid customerId, Guid rewardId)
+        {
+            return await _context.RewardRedemptions
+                .Where(rr => rr.CustomerId == customerId && rr.RewardId == rewardId)
+                .OrderByDescending(rr => rr.RedeemedAt)
+                .Select(rr => (DateTime?)rr.RedeemedAt)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<Customer?> GetCustomerByIdAsync(Guid customerId)
         {
             return await _context.Customer

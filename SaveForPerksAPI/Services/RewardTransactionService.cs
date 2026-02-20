@@ -379,8 +379,11 @@ public class RewardTransactionService : IRewardTransactionService
         // 4. Get customer balance
         var balance = await _repository.GetCustomerBalanceForRewardAsync(customer.Id, rewardId);
 
-        // 5. Build response
-        var response = BuildUserBalanceResponse(customer, reward, balance, qrCodeValue);
+        // 5. Apply expiration logic (updates balance to 0 if expired)
+        var validBalance = await ApplyExpirationLogicAsync(customer, reward, balance);
+
+        // 6. Build response with valid (possibly expired) balance
+        var response = BuildUserBalanceResponse(customer, reward, balance, qrCodeValue, validBalance);
 
         return Result<CustomerBalanceAndInfoResponseDto>.Success(response);
     }
@@ -416,27 +419,28 @@ public class RewardTransactionService : IRewardTransactionService
         Customer customer, 
         Reward reward, 
         CustomerBalance? balance,
-        string qrCodeValue)
+        string qrCodeValue,
+        int validBalance)
     {
         var response = new CustomerBalanceAndInfoResponseDto
         {
             QrCodeValue = qrCodeValue,
             CustomerName = customer.Name,
-            CurrentBalance = balance?.Balance ?? 0,
+            CurrentBalance = validBalance,  // Use the valid (possibly expired) balance
             AvailableReward = null,
             NumRewardsAvailable = 0
         };
 
-        // If no balance exists, return empty response
-        if (balance == null)
+        // If balance is 0 (expired or no balance), return empty response
+        if (validBalance == 0)
             return response;
 
         // Check if reward is available based on reward type
         if (reward.RewardType == RewardType.IncrementalPoints && 
             reward.CostPoints > 0 && 
-            balance.Balance >= reward.CostPoints)
+            validBalance >= reward.CostPoints)
         {
-            response.NumRewardsAvailable = balance.Balance / reward.CostPoints;
+            response.NumRewardsAvailable = validBalance / reward.CostPoints;
             response.AvailableReward = new AvailableRewardDto
             {
                 RewardId = reward.Id,
@@ -479,6 +483,81 @@ public class RewardTransactionService : IRewardTransactionService
 
         var scanEventDto = _mapper.Map<ScanEventDto>(scanEvent);
         return Result<ScanEventDto>.Success(scanEventDto);
+    }
+
+    /// <summary>
+    /// Checks if customer's balance has expired based on reward's expire_days setting.
+    /// If expired, updates balance to 0 in the database.
+    /// Returns the current valid balance (0 if expired, actual balance if not).
+    /// </summary>
+    private async Task<int> ApplyExpirationLogicAsync(Customer customer, Reward reward, CustomerBalance? balance)
+    {
+        // If no expire_days set, balance never expires
+        if (!reward.ExpireDays.HasValue || reward.ExpireDays.Value <= 0)
+        {
+            return balance?.Balance ?? 0;
+        }
+
+        // If no balance record exists, nothing to expire
+        if (balance == null || balance.Balance == 0)
+        {
+            return 0;
+        }
+
+        // Get last activity date (most recent of scan or redemption, date only)
+        var lastScanDate = await _repository.GetLastScanDateForCustomerRewardAsync(customer.Id, reward.Id);
+        var lastRedemptionDate = await _repository.GetLastRedemptionDateForCustomerRewardAsync(customer.Id, reward.Id);
+
+        DateTime? lastActivityDate = null;
+        if (lastScanDate.HasValue && lastRedemptionDate.HasValue)
+        {
+            lastActivityDate = lastScanDate.Value > lastRedemptionDate.Value ? lastScanDate.Value : lastRedemptionDate.Value;
+        }
+        else
+        {
+            lastActivityDate = lastScanDate ?? lastRedemptionDate;
+        }
+
+        // If no activity at all, balance is considered expired
+        if (!lastActivityDate.HasValue)
+        {
+            _logger.LogInformation(
+                "No activity found for customer {CustomerId} on reward {RewardId}. Setting balance to 0.",
+                customer.Id, reward.Id);
+
+            balance.Balance = 0;
+            balance.LastUpdated = DateTime.UtcNow;
+            await _repository.SaveChangesAsync();
+            return 0;
+        }
+
+        // Compare dates only (not time)
+        var lastActivityDateOnly = lastActivityDate.Value.Date;
+        var todayDateOnly = DateTime.UtcNow.Date;
+        var daysSinceActivity = (todayDateOnly - lastActivityDateOnly).Days;
+
+        // If activity is older than expire_days, balance is expired
+        if (daysSinceActivity > reward.ExpireDays.Value)
+        {
+            _logger.LogInformation(
+                "Balance expired for customer {CustomerId} ({CustomerName}) on reward {RewardId} ({RewardName}). " +
+                "Last activity: {LastActivityDate}, Days since: {DaysSince}, Expire days: {ExpireDays}. Setting balance to 0.",
+                customer.Id, customer.Name, reward.Id, reward.Name, 
+                lastActivityDateOnly, daysSinceActivity, reward.ExpireDays.Value);
+
+            balance.Balance = 0;
+            balance.LastUpdated = DateTime.UtcNow;
+            await _repository.SaveChangesAsync();
+            return 0;
+        }
+
+        // Balance is still valid
+        _logger.LogDebug(
+            "Balance still valid for customer {CustomerId} on reward {RewardId}. " +
+            "Days since activity: {DaysSince}, Expire days: {ExpireDays}",
+            customer.Id, reward.Id, daysSinceActivity, reward.ExpireDays.Value);
+
+        return balance.Balance;
     }
 }
 

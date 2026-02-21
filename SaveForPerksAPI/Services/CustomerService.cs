@@ -328,9 +328,20 @@ public class CustomerService : ICustomerService
             var balances = await _repository.GetCustomerBalancesWithDetailsAsync(customerId);
             var balancesList = balances.ToList();
 
-            // 3. Build Progress
-            var currentTotalPoints = balancesList.Sum(b => b.Balance);
-            var rewardsAvailable = balancesList.Count(b => b.Balance >= b.Reward.CostPoints);
+            // 3. Apply expiration logic to all balances and get valid balances
+            var validBalances = new List<(CustomerBalance balance, int validBalance)>();
+            foreach (var balance in balancesList)
+            {
+                var validBalance = await ApplyExpirationLogicAsync(customerId, balance.Reward, balance);
+                validBalances.Add((balance, validBalance));
+            }
+
+            // Filter out expired balances (where validBalance = 0)
+            var activeBalances = validBalances.Where(vb => vb.validBalance > 0).ToList();
+
+            // 4. Build Progress (using valid balances only)
+            var currentTotalPoints = activeBalances.Sum(vb => vb.validBalance);
+            var rewardsAvailable = activeBalances.Count(vb => vb.validBalance >= vb.balance.Reward.CostPoints);
 
             var progress = new CustomerProgressDto
             {
@@ -338,7 +349,7 @@ public class CustomerService : ICustomerService
                 RewardsAvailable = rewardsAvailable
             };
 
-            // 4. Build Achievements
+            // 5. Build Achievements
             var lifetimeRewardsClaimed = await _repository.GetLifetimeRewardsClaimedCountAsync(customerId);
             var totalPointsEarned = await _repository.GetLifetimePointsEarnedAsync(customerId);
 
@@ -348,10 +359,10 @@ public class CustomerService : ICustomerService
                 TotalPointsEarned = totalPointsEarned
             };
 
-            // 5. Build Active Businesses (Top 3 by most recent scan)
+            // 6. Build Active Businesses (Top 3 by most recent scan, using valid balances)
             var businessesWithScanDates = new List<(CustomerActiveBusinessDto business, DateTime? lastScan)>();
 
-            foreach (var balance in balancesList)
+            foreach (var (balance, validBalance) in activeBalances)
             {
                 var lastScanDate = await _repository.GetMostRecentScanDateForBusinessAsync(
                     customerId, 
@@ -360,9 +371,9 @@ public class CustomerService : ICustomerService
                 var activeBusinessDto = new CustomerActiveBusinessDto
                 {
                     Business = _mapper.Map<BusinessDto>(balance.Reward.Business),
-                    Balance = balance.Balance,
+                    Balance = validBalance,  // Use valid (non-expired) balance
                     CostPoints = balance.Reward.CostPoints,
-                    RewardsAvailable = balance.Balance / balance.Reward.CostPoints
+                    RewardsAvailable = validBalance / balance.Reward.CostPoints
                 };
 
                 businessesWithScanDates.Add((activeBusinessDto, lastScanDate));
@@ -375,7 +386,7 @@ public class CustomerService : ICustomerService
                 .Select(x => x.business)
                 .ToList();
 
-            // 6. Build Last 30 Days Stats
+            // 7. Build Last 30 Days Stats
             var pointsEarned = await _repository.GetLast30DaysPointsEarnedAsync(customerId);
             var scansCompleted = await _repository.GetLast30DaysScansCountAsync(customerId);
             var rewardsClaimed = await _repository.GetLast30DaysRewardsClaimedCountAsync(customerId);
@@ -387,13 +398,42 @@ public class CustomerService : ICustomerService
                 RewardsClaimed = rewardsClaimed
             };
 
-            // 7. Build complete dashboard
+            // 8. Build Points Expiring in Next 30 Days
+            var expiringPoints = new List<CustomerExpiringPointsDto>();
+
+            foreach (var (balance, validBalance) in activeBalances)
+            {
+                var daysUntilExpiration = await GetDaysUntilExpirationAsync(customerId, balance.Reward, balance);
+
+                // Only include if expiring within 30 days
+                if (daysUntilExpiration.HasValue && daysUntilExpiration.Value <= 30)
+                {
+                    var expiringDto = new CustomerExpiringPointsDto
+                    {
+                        Business = _mapper.Map<BusinessDto>(balance.Reward.Business),
+                        Reward = _mapper.Map<RewardDto>(balance.Reward),
+                        Points = validBalance,
+                        Rewards = validBalance / balance.Reward.CostPoints,
+                        DaysUntilExpiration = daysUntilExpiration.Value
+                    };
+
+                    expiringPoints.Add(expiringDto);
+                }
+            }
+
+            // Sort by days until expiration (most urgent first)
+            var sortedExpiringPoints = expiringPoints
+                .OrderBy(ep => ep.DaysUntilExpiration)
+                .ToList();
+
+            // 9. Build complete dashboard
             var dashboard = new CustomerDashboardDto
             {
                 Progress = progress,
                 Achievements = achievements,
                 Top3Businesses = top3Businesses,
-                Last30Days = last30Days
+                Last30Days = last30Days,
+                PointsExpiringInNext30Days = sortedExpiringPoints
             };
 
             _logger.LogInformation(
@@ -481,5 +521,133 @@ public class CustomerService : ICustomerService
             return Result<bool>.Failure(
                 "An error occurred while deleting the customer");
         }
+    }
+
+    /// <summary>
+    /// Checks if customer's balance has expired based on reward's expire_days setting.
+    /// If expired, updates balance to 0 in the database.
+    /// Returns the current valid balance (0 if expired, actual balance if not).
+    /// </summary>
+    private async Task<int> ApplyExpirationLogicAsync(Guid customerId, Reward reward, CustomerBalance balance)
+    {
+        // If no expire_days set, balance never expires
+        if (!reward.ExpireDays.HasValue || reward.ExpireDays.Value <= 0)
+        {
+            return balance.Balance;
+        }
+
+        // If balance is already 0, nothing to expire
+        if (balance.Balance == 0)
+        {
+            return 0;
+        }
+
+        // Get last activity date (most recent of scan or redemption, date only)
+        var lastScanDate = await _repository.GetLastScanDateForCustomerRewardAsync(customerId, reward.Id);
+        var lastRedemptionDate = await _repository.GetLastRedemptionDateForCustomerRewardAsync(customerId, reward.Id);
+
+        DateTime? lastActivityDate = null;
+        if (lastScanDate.HasValue && lastRedemptionDate.HasValue)
+        {
+            lastActivityDate = lastScanDate.Value > lastRedemptionDate.Value ? lastScanDate.Value : lastRedemptionDate.Value;
+        }
+        else
+        {
+            lastActivityDate = lastScanDate ?? lastRedemptionDate;
+        }
+
+        // If no activity at all, balance is considered expired
+        if (!lastActivityDate.HasValue)
+        {
+            _logger.LogInformation(
+                "No activity found for customer {CustomerId} on reward {RewardId}. Setting balance to 0.",
+                customerId, reward.Id);
+
+            balance.Balance = 0;
+            balance.LastUpdated = DateTime.UtcNow;
+            await _repository.SaveChangesAsync();
+            return 0;
+        }
+
+        // Compare dates only (not time)
+        var lastActivityDateOnly = lastActivityDate.Value.Date;
+        var todayDateOnly = DateTime.UtcNow.Date;
+        var daysSinceActivity = (todayDateOnly - lastActivityDateOnly).Days;
+
+        // If activity is older than expire_days, balance is expired
+        if (daysSinceActivity > reward.ExpireDays.Value)
+        {
+            _logger.LogInformation(
+                "Balance expired for customer {CustomerId} on reward {RewardId} ({RewardName}). " +
+                "Last activity: {LastActivityDate}, Days since: {DaysSince}, Expire days: {ExpireDays}. Setting balance to 0.",
+                customerId, reward.Id, reward.Name, 
+                lastActivityDateOnly, daysSinceActivity, reward.ExpireDays.Value);
+
+            balance.Balance = 0;
+            balance.LastUpdated = DateTime.UtcNow;
+            await _repository.SaveChangesAsync();
+            return 0;
+        }
+
+        // Balance is still valid
+        _logger.LogDebug(
+            "Balance still valid for customer {CustomerId} on reward {RewardId}. " +
+            "Days since activity: {DaysSince}, Expire days: {ExpireDays}",
+            customerId, reward.Id, daysSinceActivity, reward.ExpireDays.Value);
+
+        return balance.Balance;
+    }
+
+    /// <summary>
+    /// Calculates days until balance expires. Returns null if no expiration set or already expired.
+    /// Returns positive number if expiring in the future.
+    /// </summary>
+    private async Task<int?> GetDaysUntilExpirationAsync(Guid customerId, Reward reward, CustomerBalance balance)
+    {
+        // If no expire_days set, balance never expires
+        if (!reward.ExpireDays.HasValue || reward.ExpireDays.Value <= 0)
+        {
+            return null;
+        }
+
+        // If balance is 0, nothing to expire
+        if (balance.Balance == 0)
+        {
+            return null;
+        }
+
+        // Get last activity date
+        var lastScanDate = await _repository.GetLastScanDateForCustomerRewardAsync(customerId, reward.Id);
+        var lastRedemptionDate = await _repository.GetLastRedemptionDateForCustomerRewardAsync(customerId, reward.Id);
+
+        DateTime? lastActivityDate = null;
+        if (lastScanDate.HasValue && lastRedemptionDate.HasValue)
+        {
+            lastActivityDate = lastScanDate.Value > lastRedemptionDate.Value ? lastScanDate.Value : lastRedemptionDate.Value;
+        }
+        else
+        {
+            lastActivityDate = lastScanDate ?? lastRedemptionDate;
+        }
+
+        // If no activity, already expired
+        if (!lastActivityDate.HasValue)
+        {
+            return null;
+        }
+
+        // Calculate days until expiration
+        var lastActivityDateOnly = lastActivityDate.Value.Date;
+        var todayDateOnly = DateTime.UtcNow.Date;
+        var daysSinceActivity = (todayDateOnly - lastActivityDateOnly).Days;
+        var daysUntilExpiration = reward.ExpireDays.Value - daysSinceActivity;
+
+        // If already expired, return null
+        if (daysUntilExpiration <= 0)
+        {
+            return null;
+        }
+
+        return daysUntilExpiration;
     }
 }

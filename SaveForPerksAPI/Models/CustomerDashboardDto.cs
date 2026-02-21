@@ -6,6 +6,7 @@ namespace SaveForPerksAPI.Models
         public CustomerAchievementsDto Achievements { get; set; } = null!;
         public IEnumerable<CustomerActiveBusinessDto> Top3Businesses { get; set; } = new List<CustomerActiveBusinessDto>();
         public CustomerLast30DaysDto Last30Days { get; set; } = null!;
+        public IEnumerable<CustomerExpiringPointsDto> PointsExpiringInNext30Days { get; set; } = new List<CustomerExpiringPointsDto>();
     }
 
     public class CustomerProgressDto
@@ -26,6 +27,15 @@ namespace SaveForPerksAPI.Models
         public int Balance { get; set; }
         public int CostPoints { get; set; }
         public int RewardsAvailable { get; set; }
+    }
+
+    public class CustomerExpiringPointsDto
+    {
+        public BusinessDto Business { get; set; } = null!;
+        public RewardDto Reward { get; set; } = null!;
+        public int Points { get; set; }
+        public int Rewards { get; set; }
+        public int DaysUntilExpiration { get; set; }
     }
 
     public class CustomerLast30DaysDto
